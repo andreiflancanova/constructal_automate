@@ -35,3 +35,16 @@ Criar a app 'Calculate Stiffener Geometry'
 python manage.py startapp csg
 ```
 
+```bash
+python manage.py makemigrations
+```
+
+OBS.: Lembrar de colocar cada model nova dentro de /models/__init__.py para o Django reconhecer, como no exemplo a seguir:
+
+```bash
+from .plate import Plate
+```
+
+```bash
+python manage.py migrate csg
+```
