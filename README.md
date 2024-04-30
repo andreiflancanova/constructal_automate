@@ -35,6 +35,7 @@ Criar a app 'Calculate Stiffener Geometry'
 python manage.py startapp csg
 ```
 
+Criar as migrations do banco de dados
 ```bash
 python manage.py makemigrations
 ```
@@ -45,6 +46,7 @@ OBS.: Lembrar de colocar cada model nova dentro de /models/__init__.py para o Dj
 from .plate import Plate
 ```
 
+Executar a migração das tabelas da app csg
 ```bash
 python manage.py migrate csg
 ```
