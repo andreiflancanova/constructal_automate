@@ -50,3 +50,8 @@ Executar a migração das tabelas da app csg
 ```bash
 python manage.py migrate csg
 ```
+
+Executar o projeto:
+```bash
+python manage.py runserver
+```
