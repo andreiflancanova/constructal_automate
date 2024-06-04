@@ -11,9 +11,10 @@ class StiffenedPlateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
 
-        plate_id = validated_data['plate_id']
+        plate_id = validated_data.pop('plate').id
+        print(plate_id)
 
-        associated_plate = get_object_or_404(Plate.objects.all(), pk=plate_id)
+        associated_plate = get_object_or_404(Plate, id=plate_id)
 
         a = associated_plate.a
         b = associated_plate.b
@@ -25,7 +26,6 @@ class StiffenedPlateSerializer(serializers.ModelSerializer):
         k = validated_data['k']
 
         service = StiffenedPlateService()
-        # def calc_stiffener_dimensions(self, a, b, t_0, phi, Nls, Nts, k):
         h_s, t_s = service.calc_stiffener_dimensions(a, b, t_0, phi, N_ls, N_ts, k)
 
         t_1 = service.calc_corrected_plate_thickness(phi, t_0)
@@ -34,6 +34,6 @@ class StiffenedPlateSerializer(serializers.ModelSerializer):
         validated_data['t_s'] = t_s
         validated_data['t_1'] = t_1
 
-        stiffened_plate_instance = StiffenedPlate.objects.create(**validated_data)
+        stiffened_plate_instance = StiffenedPlate.objects.create(plate = associated_plate, **validated_data)
 
         return stiffened_plate_instance
