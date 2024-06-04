@@ -1,1 +1,2 @@
 from .plate_serializer import PlateSerializer
+from .stiffened_plate_serializer import StiffenedPlateSerializer
