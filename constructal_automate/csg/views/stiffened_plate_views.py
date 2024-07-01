@@ -6,6 +6,12 @@ from csg.serializers import StiffenedPlateSerializer
 
 
 class StiffenedPlateViewSet(viewsets.ModelViewSet):
+    
+    queryset = StiffenedPlate.objects.all()
+    
+    def get_serializer_class(self):
+        return StiffenedPlateSerializer
+    
     def list(self, request):
         queryset = StiffenedPlate.objects.all()
         serializer = StiffenedPlateSerializer(queryset, many=True)
@@ -25,8 +31,8 @@ class StiffenedPlateViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=201)
         return Response(serializer.errors, status=400)
 
-    def put(self, request, pk=None, *args, **kwargs):
-        instance = self.get_object(pk)
+    def update(self, request, pk=None, *args, **kwargs):
+        instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data)
         if serializer.is_valid():
             self.perform_update(serializer)
