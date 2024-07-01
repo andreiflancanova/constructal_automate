@@ -4,5 +4,6 @@ scipy
 markdown
 django-filter
 mysqlclient
+wheel
 python-dotenv
 matplotlib

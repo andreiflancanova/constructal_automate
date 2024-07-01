@@ -6,6 +6,12 @@ from csg.serializers import PlateSerializer
 
 
 class PlateViewSet(viewsets.ModelViewSet):
+    
+    queryset = Plate.objects.all()
+    
+    def get_serializer_class(self):
+        return PlateSerializer
+    
     def list(self, request):
         queryset = Plate.objects.all()
         serializer = PlateSerializer(queryset, many=True)
