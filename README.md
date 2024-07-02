@@ -35,6 +35,11 @@ Criar a app 'Calculate Stiffener Geometry'
 python manage.py startapp csg
 ```
 
+Criar a app 'Calculate Biaxial Elastic Buckling'
+```bash
+python manage.py startapp cbeb
+```
+
 Criar as migrations do banco de dados
 ```bash
 python manage.py makemigrations
