@@ -8,3 +8,7 @@ wheel
 python-dotenv
 matplotlib
 ansys-mapdl-core==0.63.4
+importlib-metadata==4.0
+protobuf==3.19
+ansys-math-core==0.1.5
+ansys-api-mapdl==0.5.1
