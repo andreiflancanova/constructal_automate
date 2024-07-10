@@ -6,8 +6,6 @@ from cbeb.models import StiffenedPlateAnalysis
 from cbeb.serializers import StiffenedPlateAnalysisSerializer
 
 
-ROOT_DIR_COMPLETE_PATH = 'D:/01_Mestrando_Andrei_PPGMC_2022/2024.1/constructal_automate_analysis_files'
-
 class StiffenedPlateAnalysisViewSet(viewsets.ModelViewSet):
     queryset = StiffenedPlateAnalysis.objects.all()
     
@@ -20,4 +18,6 @@ class StiffenedPlateAnalysisViewSet(viewsets.ModelViewSet):
         # serializer = StiffenedPlateAnalysisSerializer(stiffened_plate_analysis)
         # return Response(serializer.data)
         service = StiffenedPlateAnalysisService()
-        return Response(service.validate_mapdl_connection(ROOT_DIR_COMPLETE_PATH, 'TEST2'))
+        return Response(service.create_initial_analysis_files('teste-geracao-diretorio'))
+    
+    #TODO: Implement initial persistence for StiffenedPlateAnalysis entity

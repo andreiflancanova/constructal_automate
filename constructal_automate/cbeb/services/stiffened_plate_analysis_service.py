@@ -2,31 +2,41 @@ from pathlib import Path
 import os
 from ansys.mapdl.core import launch_mapdl
 
-class StiffenedPlateAnalysisService():    
-    def ensure_base_path_dir_exists(self, base_path_string):
-        base_path = Path(base_path_string)
+
+ROOT_DIR_COMPLETE_PATH = 'D:/01_Mestrando_Andrei_PPGMC_2022/2024.1/constructal_automate_analysis_files'
+
+
+class StiffenedPlateAnalysisService():
+
+    def ensure_base_path_dir_exists(self):
+        base_path = Path(ROOT_DIR_COMPLETE_PATH)
         if Path.is_dir(base_path):
             pass
         else:
             Path.mkdir(base_path)
-    
-    def remove_previous_analysis_files(self, analysis_dir_path_string):
-        analysis_dir_path = Path(analysis_dir_path_string)
-        if Path.is_dir(analysis_dir_path):
-            for file_name in os.listdir(analysis_dir_path):
-                file = f'{analysis_dir_path}/{file_name}'
+
+    def ensure_analysis_dir_exists(self, analysis_dir_name):
+        global analysis_dir_path_string
+        analysis_dir_path_string = f'{ROOT_DIR_COMPLETE_PATH}/{analysis_dir_name}'
+        if Path.is_dir(Path(analysis_dir_path_string)):
+            for file_name in os.listdir(analysis_dir_path_string):
+                file = f'{analysis_dir_path_string}/{file_name}'
                 if os.path.isfile(file):
                     os.remove(file)
-            print('Files were successfully removed.')    
-    
-    def create_analysis_dir(self, analysis_dir_path_string):
-        analysis_dir_path = Path(analysis_dir_path_string)
-        Path.mkdir(analysis_dir_path)
-        
+            print('Previous files were successfully removed.')    
+        else:
+            Path.mkdir(Path(analysis_dir_path_string))
+
+    def create_initial_analysis_files(self, analysis_name):
+        self.ensure_base_path_dir_exists()
+        self.ensure_analysis_dir_exists(analysis_name)
+        self.validate_mapdl_connection(analysis_dir_path_string, analysis_name)
+
+
     def validate_mapdl_connection(self, execution_dir, execution_file_name):
         try:
             pymapdl = launch_mapdl(
-                run_location=execution_dir,
+                run_location=f'{execution_dir}/',
                 jobname=execution_file_name,
                 loglevel='WARNING',
                 start_timeout=120,
@@ -40,3 +50,4 @@ class StiffenedPlateAnalysisService():
         finally:
             pymapdl.save()
             pymapdl.exit()
+        
