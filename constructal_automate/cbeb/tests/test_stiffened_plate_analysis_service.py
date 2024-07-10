@@ -1,7 +1,6 @@
 import os
 from pathlib import Path
 from django.test import SimpleTestCase
-from unittest.mock import patch
 from cbeb.services.stiffened_plate_analysis_service import StiffenedPlateAnalysisService
 
 ROOT_DIR_COMPLETE_PATH = 'D:/01_Mestrando_Andrei_PPGMC_2022/2024.1/constructal_automate_analysis_files'
@@ -62,3 +61,17 @@ class StiffenedPlateAnalysisServiceTests(SimpleTestCase):
         # Verificar se o diretório existe
         self.assertTrue(base_path.exists())
         self.assertTrue(base_path.is_dir())
+        
+    def test_validate_mapdl_connection(self):
+        # Configuração do mock para simular o retorno de pymapdl
+
+        # Definição dos argumentos para o método
+        execution_dir = ROOT_DIR_COMPLETE_PATH
+        execution_file_name = 'validate_mapdl_connection'
+
+        # Chamada do método que estamos testando
+        result = self.service.validate_mapdl_connection(execution_dir, execution_file_name)
+
+        # Verificação se o resultado retornado é o esperado
+        expected_output = "Product: Ansys Mechanical Enterprise\nMAPDL Version: 24.1\nansys.mapdl Version: 0.68.0"
+        self.assertEqual(result, expected_output)

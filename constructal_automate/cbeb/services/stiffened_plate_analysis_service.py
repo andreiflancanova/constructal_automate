@@ -1,5 +1,6 @@
 from pathlib import Path
 import os
+from ansys.mapdl.core import launch_mapdl
 
 class StiffenedPlateAnalysisService():    
     def ensure_base_path_dir_exists(self, base_path_string):
@@ -21,3 +22,21 @@ class StiffenedPlateAnalysisService():
     def create_analysis_dir(self, analysis_dir_path_string):
         analysis_dir_path = Path(analysis_dir_path_string)
         Path.mkdir(analysis_dir_path)
+        
+    def validate_mapdl_connection(self, execution_dir, execution_file_name):
+        try:
+            pymapdl = launch_mapdl(
+                run_location=execution_dir,
+                jobname=execution_file_name,
+                loglevel='WARNING',
+                start_timeout=120,
+                log_apdl=f'{execution_dir}/{execution_file_name}.txt',
+                print_com=True
+            )
+            
+            print(pymapdl)
+            
+            return str(pymapdl)
+        finally:
+            pymapdl.save()
+            pymapdl.exit()

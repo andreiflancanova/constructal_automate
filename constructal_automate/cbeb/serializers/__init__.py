@@ -1,0 +1,1 @@
+from .stiffened_plate_analysis_serializer import StiffenedPlateAnalysisSerializer
