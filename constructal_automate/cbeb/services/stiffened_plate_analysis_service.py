@@ -30,24 +30,26 @@ class StiffenedPlateAnalysisService():
     def create_initial_analysis_files(self, analysis_name):
         self.ensure_base_path_dir_exists()
         self.ensure_analysis_dir_exists(analysis_name)
-        self.validate_mapdl_connection(analysis_dir_path_string, analysis_name)
+        # self.validate_mapdl_connection(analysis_dir_path_string, analysis_name)
 
 
-    def validate_mapdl_connection(self, execution_dir, execution_file_name):
-        try:
-            pymapdl = launch_mapdl(
-                run_location=f'{execution_dir}/',
-                jobname=execution_file_name,
-                loglevel='WARNING',
-                start_timeout=120,
-                log_apdl=f'{execution_dir}/{execution_file_name}.txt',
-                print_com=True
-            )
+    # def validate_mapdl_connection(self, execution_dir, execution_file_name):
+    #     try:
+    #         pymapdl = launch_mapdl(
+    #             run_location=f'{execution_dir}/',
+    #             jobname=execution_file_name,
+    #             override=True,
+    #             cleanup_on_exit=True,
+    #             loglevel='WARNING',
+    #             start_timeout=120,
+    #             log_apdl=f'{execution_dir}/{execution_file_name}.txt',
+    #             print_com=True
+    #         )
             
-            print(pymapdl)
+    #         print(pymapdl)
             
-            return str(pymapdl)
-        finally:
-            pymapdl.save()
-            pymapdl.exit()
+    #         return str(pymapdl)
+    #     finally:
+    #         pymapdl.save()
+    #         pymapdl.exit()
         

@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from cbeb.models import StiffenedPlateAnalysis
 from cbeb.serializers import StiffenedPlateAnalysisSerializer
+from cbeb.config import MapdlConnectionPool
 
 
 class StiffenedPlateAnalysisViewSet(viewsets.ModelViewSet):
@@ -17,7 +18,20 @@ class StiffenedPlateAnalysisViewSet(viewsets.ModelViewSet):
         # stiffened_plate_analysis = get_object_or_404(queryset, pk=pk)
         # serializer = StiffenedPlateAnalysisSerializer(stiffened_plate_analysis)
         # return Response(serializer.data)
-        service = StiffenedPlateAnalysisService()
-        return Response(service.create_initial_analysis_files('teste-geracao-diretorio'))
+        
+        
+        # service = StiffenedPlateAnalysisService()
+        # return Response(service.create_initial_analysis_files('teste-geracao-diretorio'))
+        
+        mapdl = MapdlConnectionPool()
+        
+        connection = mapdl.get_connection()
+        
+        try:
+            result = connection.inquire('', 'VER')
+        finally:
+            mapdl.return_connection(connection)
+            
+        return Response(result)
     
     #TODO: Implement initial persistence for StiffenedPlateAnalysis entity
