@@ -1,11 +1,11 @@
 from pathlib import Path
 import os
-# from multiprocessing import Pool
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from ansys.mapdl.core import launch_mapdl
 
 MAPDL_TEMP_DIR_PREFIX = 'mapdl_connection_temp_dir'
+MAPDL_ENV_VARS = {"ANSYS_LOCK":"OFF"}
 MAPDL_LOG_LEVEL = 'WARNING'
 MAPDL_START_TIMEOUT = 120
 
@@ -42,6 +42,7 @@ class MapdlConnectionPool:
         return launch_mapdl(
             run_location=run_location,
             jobname=jobname,
+            add_env_vars=MAPDL_ENV_VARS,
             override=True,
             loglevel=MAPDL_LOG_LEVEL,
             start_timeout=MAPDL_START_TIMEOUT,

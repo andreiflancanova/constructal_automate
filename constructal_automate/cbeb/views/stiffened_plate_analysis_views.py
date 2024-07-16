@@ -28,7 +28,7 @@ class StiffenedPlateAnalysisViewSet(viewsets.ModelViewSet):
         connection = mapdl.get_connection()
         
         try:
-            result = connection.inquire('', 'VER')
+            result = connection.inquire('', 'RELEASE')
         finally:
             mapdl.return_connection(connection)
             
