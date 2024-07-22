@@ -1,15 +1,17 @@
+import atexit
 from pathlib import Path
 import os
 import threading
-from concurrent.futures import ThreadPoolExecutor
-from ansys.mapdl.core import launch_mapdl
+from ansys.mapdl.core.pool import MapdlPool
 
 MAPDL_EXEC_FILE = os.getenv('MAPDL_EXEC_FILE')
-MAPDL_POOL_PROCESSORS_PER_CONNECTION = int(os.getenv('MAPDL_POOL_PROCESSORS_PER_CONNECTION'))
-MAPDL_TEMP_DIR_PREFIX = os.getenv('MAPDL_TEMP_DIR_PREFIX')
+MAPDL_POOL_PROCESSORS_PER_CONNECTION = int(os.getenv('MAPDL_POOL_PROCESSORS_PER_CONNECTION', 1))
+MAPDL_TEMP_DIR_PREFIX = os.getenv('MAPDL_TEMP_DIR_PREFIX', 'mapdl')
 MAPDL_ENV_VARS = {"ANSYS_LOCK": "OFF"}
-MAPDL_LOG_LEVEL = os.getenv('MAPDL_LOG_LEVEL')
-MAPDL_START_TIMEOUT = int(os.getenv('MAPDL_START_TIMEOUT'))
+MAPDL_LOG_LEVEL = os.getenv('MAPDL_LOG_LEVEL', 'ERROR')
+MAPDL_START_TIMEOUT = int(os.getenv('MAPDL_START_TIMEOUT', 30))
+MAPDL_POOL_SIZE = int(os.getenv('MAPDL_POOL_SIZE', 4))
+MAPDL_BASE_DIR = os.getenv('MAPDL_BASE_DIR', '/tmp/mapdl_pool')
 
 class MapdlConnection:
     def __init__(self, connection, idx, temp_run_location_absolute_path, jobname):
@@ -28,6 +30,7 @@ class MapdlConnectionPool:
                 if cls._instance is None:
                     cls._instance = super(MapdlConnectionPool, cls).__new__(cls)
                     cls._instance._initialize_pool(*args, **kwargs)
+                    atexit.register(cls._instance.close_all)
         return cls._instance
 
     def _initialize_pool(self, pool_size, base_dir, *args, **kwargs):
@@ -35,63 +38,46 @@ class MapdlConnectionPool:
         self.base_dir = base_dir
         self.args = args
         self.kwargs = kwargs
-        self.executor = ThreadPoolExecutor(max_workers=pool_size)
-        self.connections = []
-        self._initialize_connections()
 
-    def _initialize_connections(self):
-        for i in range(self.pool_size):
-            self.connections.append(self._create_connection(i))
+        jobnames = [f'{MAPDL_TEMP_DIR_PREFIX}_{i:02d}' for i in range(self.pool_size)]
+        run_locations = [Path(f'{self.base_dir}/{jobname}') for jobname in jobnames]
 
-    def _create_connection(self, idx):
-        print('Creating MAPDL connection #', idx)
-        jobname_string = f'{MAPDL_TEMP_DIR_PREFIX}_{idx:02d}'
-        temp_run_location_absolute_path_string = f'{self.base_dir}/{jobname_string}'
-        temp_run_location_absolute_path = Path(temp_run_location_absolute_path_string)
-        os.makedirs(temp_run_location_absolute_path, exist_ok=True)
-        
-        connection = launch_mapdl(
-            exec_file=MAPDL_EXEC_FILE,
-            start_instance=True,
-            nproc=MAPDL_POOL_PROCESSORS_PER_CONNECTION,
-            port=50052+idx,
-            run_location=f'{temp_run_location_absolute_path_string}',
-            jobname=jobname_string,
-            add_env_vars=MAPDL_ENV_VARS,
-            override=True,
-            loglevel=MAPDL_LOG_LEVEL,
-            start_timeout=MAPDL_START_TIMEOUT,
-            cleanup_on_exit=True,
-            print_com=True,
-            *self.args,
-            **self.kwargs
-        )
+        try:
+            self.mapdl_pool = MapdlPool(
+                n_instances=self.pool_size,
+                exec_file=MAPDL_EXEC_FILE,
+                nproc=MAPDL_POOL_PROCESSORS_PER_CONNECTION,
+                loglevel=MAPDL_LOG_LEVEL,
+                start_timeout=MAPDL_START_TIMEOUT,
+                cleanup_on_exit=True
+            )
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize MAPDL pool: {e}")
 
-        mapdl_connection_wrapper = MapdlConnection(connection, idx, temp_run_location_absolute_path_string, jobname_string)
+        self.available_connections = [
+            MapdlConnection(connection, idx, str(run_location), jobname)
+            for idx, (connection, run_location, jobname) in enumerate(zip(self.mapdl_pool, run_locations, jobnames))
+        ]
+        self.occupied_connections = []
 
-        mapdl = mapdl_connection_wrapper.connection
-
-        mapdl.save(slab='ALL')
-
-        return mapdl_connection_wrapper
-
-    def get_connection_wrapper(self):
+    def get_connection(self):
         with self._lock:
-            if not self.connections:
+            if not self.available_connections:
                 raise RuntimeError("No available MAPDL connections")
-            return self.connections.pop()
+            connection = self.available_connections.pop()
+            self.occupied_connections.append(connection)
+            return connection
 
     def return_connection(self, mapdl_connection):
         with self._lock:
-            self.connections.append(mapdl_connection)
+            self.occupied_connections.remove(mapdl_connection)
+            self.available_connections.append(mapdl_connection)
 
-    #Este método não está matando as instâncias do pool
     def close_all(self):
         with self._lock:
-            while self.connections:
-                mapdl_connection_wrapper = self.connections.pop()
+            for mapdl_connection in self.occupied_connections + self.available_connections:
                 try:
-                    mapdl_connection_wrapper.connection.exit()
+                    mapdl_connection.connection.exit()
                 except Exception as e:
                     print(f"Error closing MAPDL connection: {e}")
-            self.executor.shutdown(wait=True)
+            self.mapdl_pool.exit()

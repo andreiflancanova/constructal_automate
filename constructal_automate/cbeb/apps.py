@@ -14,7 +14,6 @@ class CbebConfig(AppConfig):
     name = 'cbeb'
 
     def ready(self):
-        global mapdl_connection_pool
         if not hasattr(self, 'pool_initialized'):
             mapdl_connection_pool = MapdlConnectionPool(
                 pool_size=MAPDL_POOL_NUMBER_OF_CONNECTIONS,

@@ -60,24 +60,25 @@ class StiffenedPlateAnalysisService():
         N_ts = stiffened_plate.N_ts
         N_ls = stiffened_plate.N_ls
         mesh_size = stiffened_plate_analysis.mesh_size
-        
+
         analysis_name = f'phi_{phi}_Nls_{N_ls}_Nts_{N_ts}_k_{k}'
         self.create_dir_structure(stiffened_plate_analysis.case_study, analysis_name)
 
-        mapdl_pool = MapdlConnectionPool()
-        mapdl_connection_wrapper = mapdl_pool.get_connection_wrapper()
-        mapdl = mapdl_connection_wrapper.connection
+        mapdl_connection_pool = MapdlConnectionPool()
 
+        mapdl_connection = mapdl_connection_pool.get_connection()
+        
+        mapdl = mapdl_connection.connection
         #TODO: Ver cenários onde a placa é retangular sem enrijecedor, pois está dando erro
 
         try:
-            mapdl.run("WPSTYLE,,,,,,,,0")
-            mapdl.cwd(f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH}/{stiffened_plate_analysis.case_study}/{analysis_name}')
-            mapdl.save(slab='ALL')
-            # mapdl.open_apdl_log(f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH}/{stiffened_plate_analysis.case_study}/{analysis_name}')
-            mapdl.open_apdl_log(f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH}/{stiffened_plate_analysis.case_study}/{analysis_name}/{analysis_name}.txt')
+            # mapdl.run("WPSTYLE,,,,,,,,0")
+            mapdl.clear()
             mapdl.filname(fname=analysis_name, key=0)
+            mapdl.cwd(f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH}/{stiffened_plate_analysis.case_study}/{analysis_name}')
+            # mapdl.open_apdl_log(f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH}/{stiffened_plate_analysis.case_study}/{analysis_name}/{analysis_name}.txt')
             mapdl.title(analysis_name)
+            mapdl.save(slab='ALL')
 
             mapdl.prep7()
 
@@ -273,7 +274,7 @@ class StiffenedPlateAnalysisService():
             ## Contorno da placa inteira
             mapdl.cmsel("S", PLACA)
             mapdl.lsla("S")
-            mapdl.cm(LINES_CONTORNO_PLACA , "LINE")
+            mapdl.cm(LINES_CONTORNO_PLACA, "LINE")
             
             ## Direção Longitudinal
             ### Borda esquerda
@@ -347,10 +348,10 @@ class StiffenedPlateAnalysisService():
             #Salvar as alterações
             mapdl.save(slab='ALL')
             #Deixar no contexto inicial de novo
-            mapdl.resume(fname=f'{mapdl_connection_wrapper.temp_run_location_absolute_path}/{mapdl_connection_wrapper.jobname}.db')
+            mapdl.resume(fname=f'{mapdl_connection.temp_run_location_absolute_path}/{mapdl_connection.jobname}.db')
             
         finally:
-            mapdl_pool.return_connection(mapdl)
+            mapdl_connection_pool.return_connection(mapdl_connection)
         
         
     
