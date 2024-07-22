@@ -56,6 +56,12 @@ Executar a migração das tabelas da app csg
 python manage.py migrate csg
 ```
 
+Ativar o virtualenv
+```bash
+cd ../../python-env-dirs/
+source constructal-automate-dev01-0.68/Scripts/activate
+```
+
 Executar o projeto:
 ```bash
 python manage.py runserver --noreload

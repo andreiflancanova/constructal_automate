@@ -5,17 +5,18 @@ from concurrent.futures import ThreadPoolExecutor
 from ansys.mapdl.core import launch_mapdl
 
 MAPDL_EXEC_FILE = os.getenv('MAPDL_EXEC_FILE')
-MAPDL_HOST_IP = os.getenv('MAPDL_HOST_IP')
+MAPDL_POOL_PROCESSORS_PER_CONNECTION = int(os.getenv('MAPDL_POOL_PROCESSORS_PER_CONNECTION'))
 MAPDL_TEMP_DIR_PREFIX = os.getenv('MAPDL_TEMP_DIR_PREFIX')
 MAPDL_ENV_VARS = {"ANSYS_LOCK": "OFF"}
 MAPDL_LOG_LEVEL = os.getenv('MAPDL_LOG_LEVEL')
-MAPDL_START_TIMEOUT = os.getenv('MAPDL_START_TIMEOUT')
+MAPDL_START_TIMEOUT = int(os.getenv('MAPDL_START_TIMEOUT'))
 
 class MapdlConnection:
-    def __init__(self, connection, idx, temp_run_location_absolute_path):
+    def __init__(self, connection, idx, temp_run_location_absolute_path, jobname):
         self.connection = connection
         self.idx = idx
         self.temp_run_location_absolute_path = temp_run_location_absolute_path
+        self.jobname = jobname
 
 class MapdlConnectionPool:
     _instance = None
@@ -40,7 +41,7 @@ class MapdlConnectionPool:
 
     def _initialize_connections(self):
         for i in range(self.pool_size):
-            self.connections.append(self._create_connection(i+1))
+            self.connections.append(self._create_connection(i))
 
     def _create_connection(self, idx):
         print('Creating MAPDL connection #', idx)
@@ -51,8 +52,9 @@ class MapdlConnectionPool:
         
         connection = launch_mapdl(
             exec_file=MAPDL_EXEC_FILE,
-            ip='127.0.0.1',
-            port='50052',
+            start_instance=True,
+            nproc=MAPDL_POOL_PROCESSORS_PER_CONNECTION,
+            port=50052+idx,
             run_location=f'{temp_run_location_absolute_path_string}',
             jobname=jobname_string,
             add_env_vars=MAPDL_ENV_VARS,
@@ -61,12 +63,11 @@ class MapdlConnectionPool:
             start_timeout=MAPDL_START_TIMEOUT,
             cleanup_on_exit=True,
             print_com=True,
-            log_apdl=f'{temp_run_location_absolute_path}/{jobname_string}.txt',
             *self.args,
             **self.kwargs
         )
 
-        mapdl_connection_wrapper = MapdlConnection(connection, idx, temp_run_location_absolute_path_string)
+        mapdl_connection_wrapper = MapdlConnection(connection, idx, temp_run_location_absolute_path_string, jobname_string)
 
         mapdl = mapdl_connection_wrapper.connection
 
@@ -84,8 +85,13 @@ class MapdlConnectionPool:
         with self._lock:
             self.connections.append(mapdl_connection)
 
+    #Este método não está matando as instâncias do pool
     def close_all(self):
         with self._lock:
-            for mapdl_connection in self.connections:
-                mapdl_connection.connection.exit()
+            while self.connections:
+                mapdl_connection_wrapper = self.connections.pop()
+                try:
+                    mapdl_connection_wrapper.connection.exit()
+                except Exception as e:
+                    print(f"Error closing MAPDL connection: {e}")
             self.executor.shutdown(wait=True)
