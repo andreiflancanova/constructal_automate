@@ -13,12 +13,14 @@ MAPDL_START_TIMEOUT = int(os.getenv('MAPDL_START_TIMEOUT', 30))
 MAPDL_POOL_SIZE = int(os.getenv('MAPDL_POOL_SIZE', 4))
 MAPDL_BASE_DIR = os.getenv('MAPDL_BASE_DIR', '/tmp/mapdl_pool')
 
+
 class MapdlConnection:
     def __init__(self, connection, idx, temp_run_location_absolute_path, jobname):
         self.connection = connection
         self.idx = idx
         self.temp_run_location_absolute_path = temp_run_location_absolute_path
         self.jobname = jobname
+
 
 class MapdlConnectionPool:
     _instance = None

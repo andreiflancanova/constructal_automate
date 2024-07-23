@@ -75,8 +75,14 @@ class StiffenedPlateAnalysisService():
             # mapdl.run("WPSTYLE,,,,,,,,0")
             mapdl.clear()
             mapdl.filname(fname=analysis_name, key=0)
-            mapdl.cwd(f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH}/{stiffened_plate_analysis.case_study}/{analysis_name}')
-            # mapdl.open_apdl_log(f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH}/{stiffened_plate_analysis.case_study}/{analysis_name}/{analysis_name}.txt')
+            analysis_cwd_path = f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH}/{stiffened_plate_analysis.case_study}/{analysis_name}'
+            analysis_log_path = f'{analysis_cwd_path}/{analysis_name}.txt'
+            mapdl.cwd(analysis_cwd_path)
+            stiffened_plate_analysis.analysis_dir_path = analysis_cwd_path
+            stiffened_plate_analysis.analysis_lgw_file_path = analysis_log_path
+            stiffened_plate_analysis.save()
+            mapdl.open_apdl_log(filename=analysis_log_path, mode='a')
+            #Testar log com modo w
             mapdl.title(analysis_name)
             mapdl.save(slab='ALL')
 
@@ -98,33 +104,32 @@ class StiffenedPlateAnalysisService():
             # Parâmetros de discretização
             ## Elemento Finito
             mapdl.et(1, "SHELL281")
-            
+
             ## Material
             mapdl.mptemp("", "", "")
             mapdl.mptemp(1, 0)
             mapdl.mpdata("EX", 1, "", E)
             mapdl.mpdata("PRXY", 1, "", poisson_ration)
-            
+
             # Seções
             ## Seção da placa
             mapdl.run("sect,1,shell")
             mapdl.secdata(t_1, 1, 0, 3)
             mapdl.secoffset("TOP")
             mapdl.seccontrol("", "", "", "", "", "")
-            
+
             ## Seção dos enrijecedores transversais
             mapdl.run("sect,2,shell")
             mapdl.secdata(t_s, 1, 0, 3)
             mapdl.secoffset("MID")
             mapdl.seccontrol(0, 0, 0, 0, 1, 1, 1)
-            
+
             ## Seção dos enrijecedores longitudinais
             mapdl.run("sect,3,shell")
             mapdl.secdata(t_s, 1, 0, 3)
             mapdl.secoffset("MID")
             mapdl.seccontrol(0, 0, 0, 0, 1, 1, 1)
-            
-            
+
             #Definir espaçamento dos enrijecedores
             
             a_ts = float(round(a/(N_ts+1), 3))
@@ -177,7 +182,7 @@ class StiffenedPlateAnalysisService():
             mapdl.asel("INVE", "AREA")
             mapdl.cm(ENRIJECEDORES_LONGITUDINAIS, "AREA")
 
-            mapdl.rectng(x1=0, x2=a, y1 = 0, y2 = b)
+            mapdl.rectng(x1=0, x2=a, y1=0, y2=b)
             mapdl.cmsel("S", ENRIJECEDORES_TRANSVERSAIS)
             mapdl.cmsel("A", ENRIJECEDORES_LONGITUDINAIS)
             mapdl.asel("INVE", "AREA")
@@ -223,7 +228,7 @@ class StiffenedPlateAnalysisService():
             # mapdl.nummrg(label="NODE",toler="", gtoler=POWER, action="", switch="LOW")
             # mapdl.nummrg(label="KP",toler="", gtoler=POWER, action="", switch="LOW")
             mapdl.aptn("ALL")
-            mapdl.nummrg(label="ALL",toler="", gtoler="", action="", switch="LOW")
+            mapdl.nummrg(label="ALL", toler="", gtoler="", action="", switch="LOW")
             
             # no_erro = 10563
             # coord_x_erro = mapdl.get(f'x,node,{no_erro},LOC,X')
@@ -236,12 +241,12 @@ class StiffenedPlateAnalysisService():
             
             #Sair do PREP7 para ir para o /SOLU
             mapdl.finish()
-            
+
             #Entrar no /SOLU
             mapdl.slashsolu()
             mapdl.run("ANTYPE,0")
             mapdl.pstres(1)
-            
+
             #Boundary Conditions
             ## Selecionar KP Inferior Esquerdo
             mapdl.cmsel("S", PLACA)
@@ -343,18 +348,16 @@ class StiffenedPlateAnalysisService():
                 cnam1=LINES_BORDA_TS,
                 cnam2=LINES_BORDA_LS)
             
-            #Aplicar BCs de translação ao longo de z das bordas dos enrijecedores
+            # Aplicar BCs de translação ao longo de z das bordas dos enrijecedores
             mapdl.dl(LINES_BORDA_ENRIJECEDORES, "", "UZ", 0)
-            #Salvar as alterações
+            # Salvar as alterações
             mapdl.save(slab='ALL')
-            #Deixar no contexto inicial de novo
+            # Retornar ao contexto original
             mapdl.resume(fname=f'{mapdl_connection.temp_run_location_absolute_path}/{mapdl_connection.jobname}.db')
-            
+            mapdl._close_apdl_log()
         finally:
             mapdl_connection_pool.return_connection(mapdl_connection)
-        
-        
-    
+
     def create_dir_structure(self, case_study_name, analysis_name):
 
         self.ensure_dir_exists(MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH)
