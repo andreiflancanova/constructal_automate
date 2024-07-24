@@ -73,18 +73,27 @@ class StiffenedPlateAnalysisService():
 
         mapdl = mapdl_connection.connection
 
-        #TODO: Ver cenários onde a placa é retangular sem enrijecedor, pois está dando erro
-
         try:
             self.create_mapdl_initial_files(mapdl, analysis_name, analysis_cwd_path, analysis_log_path, stiffened_plate_analysis)
-            self.define_element_type_section_and_material(mapdl, E, poisson_ratio, t_1, t_s)
-            self.define_stiffened_plate_geometry(mapdl, a, b, N_ts, N_ls, h_s)
-            self.define_discretization(mapdl, mesh_size)
-            self.define_components_and_apply_boundary_conditions(mapdl, a, b)
+
+            if self.is_stiffened_plate(h_s, t_s):
+                self.define_stiffened_plate_element_type_section_and_material(mapdl, E, poisson_ratio, t_1, t_s)
+                self.define_stiffened_plate_geometry(mapdl, a, b, N_ts, N_ls, h_s)
+                self.define_stiffened_plate_discretization(mapdl, mesh_size)
+                self.define_stiffened_plate_components_and_apply_boundary_conditions(mapdl, a, b)
+            else:
+                self.define_plate_element_type_section_and_material(mapdl, E, poisson_ratio, t_1)
+                self.define_plate_element_type_section_and_material(mapdl, E, poisson_ratio, t_1)
+                self.define_plate_geometry(mapdl, a, b)
+                self.define_plate_discretization(mapdl, mesh_size)
+                self.define_plate_boundary_conditions(mapdl, a, b)
 
             # Salvar as alterações
             mapdl.save(slab='ALL')
             # Retornar ao contexto original
+            mapdl.cwd(mapdl_connection.temp_run_location_absolute_path)
+            mapdl.clear()
+            mapdl.filname(fname=mapdl_connection.jobname, key=0)
             mapdl.resume(fname=f'{mapdl_connection.temp_run_location_absolute_path}/{mapdl_connection.jobname}.db')
             mapdl._close_apdl_log()
         finally:
@@ -132,7 +141,7 @@ class StiffenedPlateAnalysisService():
             stiffened_plate_analysis.analysis_lgw_file_path = analysis_log_path
             stiffened_plate_analysis.save()
 
-    def define_element_type_section_and_material(self, mapdl, E, poisson_ratio, t_1, t_s):
+    def define_stiffened_plate_element_type_section_and_material(self, mapdl, E, poisson_ratio, t_1, t_s):
         mapdl.prep7()
         mapdl._run("/NOPR")
         mapdl.keyw("PR_SET", 1)
@@ -148,40 +157,40 @@ class StiffenedPlateAnalysisService():
         mapdl.run("/GO")
 
         # Parâmetros de discretização
-        ## Elemento Finito
+        # # Elemento Finito
         mapdl.et(1, "SHELL281")
 
-        ## Material
+        # # Material
         mapdl.mptemp("", "", "")
         mapdl.mptemp(1, 0)
         mapdl.mpdata("EX", 1, "", E)
         mapdl.mpdata("PRXY", 1, "", poisson_ratio)
 
         # Seções
-        ## Seção da placa
+        # # Seção da placa
         mapdl.run("sect,1,shell")
         mapdl.secdata(t_1, 1, 0, 3)
         mapdl.secoffset("TOP")
         mapdl.seccontrol("", "", "", "", "", "")
 
-        ## Seção dos enrijecedores transversais
+        # # Seção dos enrijecedores transversais
         mapdl.run("sect,2,shell")
         mapdl.secdata(t_s, 1, 0, 3)
         mapdl.secoffset("MID")
         mapdl.seccontrol(0, 0, 0, 0, 1, 1, 1)
 
-        ## Seção dos enrijecedores longitudinais
+        # # Seção dos enrijecedores longitudinais
         mapdl.run("sect,3,shell")
         mapdl.secdata(t_s, 1, 0, 3)
         mapdl.secoffset("MID")
         mapdl.seccontrol(0, 0, 0, 0, 1, 1, 1)
 
     def define_stiffened_plate_geometry(self, mapdl, a, b, N_ts, N_ls, h_s):
-        #Definir espaçamento dos enrijecedores
+        # Definir espaçamento dos enrijecedores
         a_ts = float(round(a/(N_ts+1), 3))
         b_ls = float(round(b/(N_ls+1), 3))
 
-        #Definir keypoints
+        # Definir keypoints
         mapdl.k(1, a_ts, 0, 0)
         mapdl.k(2, a_ts, b, 0)
         mapdl.k(3, a_ts, b, h_s)
@@ -191,7 +200,7 @@ class StiffenedPlateAnalysisService():
         mapdl.k(7, a, b_ls, h_s)
         mapdl.k(8, 0, b_ls, h_s)
 
-        #Criar área do enrijecedor longitudinal
+        # Criar área do enrijecedor longitudinal
         mapdl.flst(2, 4, 3)
         mapdl.fitem(2, 1)
         mapdl.fitem(2, 2)
@@ -199,13 +208,13 @@ class StiffenedPlateAnalysisService():
         mapdl.fitem(2, 4)
         mapdl.a("P51X")
 
-        #Selection Logic para criar os enrijecedores
-        # Enrijecedores Transversais
+        # Selection Logic para criar os enrijecedores
+        # # Enrijecedores Transversais
         mapdl.asel("S", "LOC", "X", 0.99*a_ts, 1.01*a_ts)
         mapdl.cm(ENRIJECEDOR_TRANSVERSAL, "AREA")
         mapdl.agen(itime=N_ts, na1=ENRIJECEDOR_TRANSVERSAL, dx=a_ts)
 
-        ## Componente dos Enrijecedores Transversais
+        # # Componente dos Enrijecedores Transversais
         mapdl.asel("ALL")
         mapdl.cm(ENRIJECEDORES_TRANSVERSAIS, "AREA")
 
@@ -224,7 +233,7 @@ class StiffenedPlateAnalysisService():
         mapdl.agen(itime=N_ls, na1=ENRIJECEDOR_LONGITUDINAL, dy=b_ls)
         mapdl.cmsel("S", ENRIJECEDORES_TRANSVERSAIS)
 
-        ## Componente dos Enrijecedores Longitudinais
+        # # Componente dos Enrijecedores Longitudinais
         mapdl.asel("INVE", "AREA")
         mapdl.cm(ENRIJECEDORES_LONGITUDINAIS, "AREA")
 
@@ -240,9 +249,9 @@ class StiffenedPlateAnalysisService():
         mapdl.mshape(0, "2D")
         mapdl.mshkey(0)
 
-    def define_discretization(self, mapdl, mesh_size):
+    def define_stiffened_plate_discretization(self, mapdl, mesh_size):
         # Discretização
-        ## Discretização da placa
+        # # Discretização da placa
         mapdl.type(1)
         mapdl.mat(1)
         mapdl.run("REAL")
@@ -251,7 +260,7 @@ class StiffenedPlateAnalysisService():
         mapdl.aesize(PLACA, mesh_size)
         mapdl.amesh(PLACA)
 
-        ## Discretização dos enrijecedores transversais
+        # # Discretização dos enrijecedores transversais
         mapdl.type(1)
         mapdl.mat(1)
         mapdl.run("REAL")
@@ -260,7 +269,7 @@ class StiffenedPlateAnalysisService():
         mapdl.aesize(ENRIJECEDORES_TRANSVERSAIS, mesh_size)
         mapdl.amesh(ENRIJECEDORES_TRANSVERSAIS)
 
-        ## Discretização dos enrijecedores longitudinais
+        # # Discretização dos enrijecedores longitudinais
         mapdl.type(1)
         mapdl.mat(1)
         mapdl.run("REAL")
@@ -277,17 +286,17 @@ class StiffenedPlateAnalysisService():
         mapdl.aptn("ALL")
         mapdl.nummrg(label="ALL", toler="", gtoler="", action="", switch="LOW")
 
-        #Sair do PREP7 para ir para o /SOLU
+        # Sair do PREP7 para ir para o /SOLU
         mapdl.finish()
 
-    def define_components_and_apply_boundary_conditions(self, mapdl, a, b):
-        #Entrar no /SOLU
+    def define_stiffened_plate_components_and_apply_boundary_conditions(self, mapdl, a, b):
+        # Entrar no /SOLU
         mapdl.slashsolu()
         mapdl.run("ANTYPE,0")
         mapdl.pstres(1)
 
-        #Boundary Conditions
-        ## Selecionar KP Inferior Esquerdo
+        # Boundary Conditions
+        # # Selecionar KP Inferior Esquerdo
         mapdl.cmsel("S", PLACA)
         mapdl.lsla("S")
         mapdl.ksll("S")
@@ -296,7 +305,7 @@ class StiffenedPlateAnalysisService():
         mapdl.cm(KP_INFERIOR_ESQUERDO, "KP")
         mapdl.dk(KP_INFERIOR_ESQUERDO, "UX", "UY", 0, 0)
 
-        ## Selecionar KP Superior Esquerdo
+        # # Selecionar KP Superior Esquerdo
         mapdl.cmsel("S", PLACA)
         mapdl.lsla("S")
         mapdl.ksll("S")
@@ -305,7 +314,7 @@ class StiffenedPlateAnalysisService():
         mapdl.cm(KP_SUPERIOR_ESQUERDO, "KP")
         mapdl.dk(KP_SUPERIOR_ESQUERDO, "UX", 0)
 
-        ## Selecionar KP Inferior Direito
+        # # Selecionar KP Inferior Direito
         mapdl.cmsel("S", PLACA)
         mapdl.lsla("S")
         mapdl.ksll("S")
@@ -314,19 +323,19 @@ class StiffenedPlateAnalysisService():
         mapdl.cm(KP_INFERIOR_DIREITO, "KP")
         mapdl.dk(KP_INFERIOR_DIREITO, "UY", 0)
 
-        #Adicionando componentes da placa
-        ## Contorno da placa inteira
+        # Adicionando componentes da placa
+        # # Contorno da placa inteira
         mapdl.cmsel("S", PLACA)
         mapdl.lsla("S")
         mapdl.cm(LINES_CONTORNO_PLACA, "LINE")
 
-        ## Direção Longitudinal
-        ### Borda esquerda
+        # # Direção Longitudinal
+        # ## Borda esquerda
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "X", 0)
         mapdl.cm(LINES_CONTORNO_PLACA_ESQUERDA, "LINE")
 
-        ### Borda direita
+        # ## Borda direita
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "X", a)
         mapdl.cm(LINES_CONTORNO_PLACA_DIREITA, "LINE")
@@ -335,18 +344,18 @@ class StiffenedPlateAnalysisService():
             cnam1=LINES_CONTORNO_PLACA_ESQUERDA,
             cnam2=LINES_CONTORNO_PLACA_DIREITA)
 
-        ## Direção Longitudinal
-        ### Borda inferior
+        # # Direção Longitudinal
+        # ## Borda inferior
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "Y", 0)
         mapdl.cm(LINES_CONTORNO_PLACA_INFERIOR, "LINE")
 
-        ### Borda superior
+        # ## Borda superior
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "Y", b)
         mapdl.cm(LINES_CONTORNO_PLACA_SUPERIOR, "LINE")
 
-        ### Bordas paralelas aos enrijecedores longitudinais   
+        # ## Bordas paralelas aos enrijecedores longitudinais   
         mapdl.cmgrp(aname=LINES_CONTORNO_PLACA_LS,
             cnam1=LINES_CONTORNO_PLACA_INFERIOR,
             cnam2=LINES_CONTORNO_PLACA_SUPERIOR)
@@ -389,3 +398,76 @@ class StiffenedPlateAnalysisService():
 
         # Aplicar BCs de translação ao longo de z das bordas dos enrijecedores
         mapdl.dl(LINES_BORDA_ENRIJECEDORES, "", "UZ", 0)
+
+    def is_stiffened_plate(self, h_s, t_s):
+        return h_s != 0.00 and t_s != 0.00
+
+    def define_plate_element_type_section_and_material(self, mapdl, E, poisson_ratio, t_1):
+        mapdl.prep7()
+        mapdl._run("/NOPR")
+        mapdl.keyw("PR_SET", 1)
+        mapdl.keyw("PR_STRUC", 1)
+        mapdl.keyw("PR_THERM", 0)
+        mapdl.keyw("PR_FLUID", 0)
+        mapdl.keyw("PR_ELMAG", 0)
+        mapdl.keyw("MAGNOD", 0)
+        mapdl.keyw("MAGEDG", 0)
+        mapdl.keyw("MAGHFE", 0)
+        mapdl.keyw("MAGELC", 0)
+        mapdl.keyw("PR_MULTI", 0)
+        mapdl.run("/GO")
+
+        # Parâmetros de discretização
+        # # Elemento Finito
+        mapdl.et(1, "SHELL281")
+
+        # # Material
+        mapdl.mptemp("", "", "")
+        mapdl.mptemp(1, 0)
+        mapdl.mpdata("EX", 1, "", E)
+        mapdl.mpdata("PRXY", 1, "", poisson_ratio)
+
+        # Seções
+        # # Seção da placa
+        mapdl.run("sect,1,shell")
+        mapdl.secdata(t_1, 1, 0, 3)
+        mapdl.secoffset("TOP")
+        mapdl.seccontrol("", "", "", "", "", "")
+
+    def define_plate_geometry(self, mapdl, a, b):
+        mapdl.rectng(x1=0, x2=a, y1=0, y2=b)
+        mapdl.asel("ALL")
+        mapdl.mshape(0, "2D")
+        mapdl.mshkey(0)
+
+    def define_plate_discretization(self, mapdl, mesh_size):
+        mapdl.aesize("ALL", mesh_size)
+        mapdl.cm("_Y", "AREA")
+        mapdl.asel("", "", "", 1)
+        mapdl.cm("_Y1", "AREA")
+        mapdl.chkmsh("AREA")
+        mapdl.cmsel("S", "_Y")
+        mapdl.amesh("_Y1")
+        mapdl.cmdele("_Y")
+        mapdl.cmdele("_Y1")
+        mapdl.cmdele("_Y2")
+        mapdl.finish()
+
+    # TODO: Refatorar esse método para usar Selection Logic
+    def define_plate_boundary_conditions(self, mapdl, a, b):
+        mapdl.slashsolu()
+        mapdl.run("ANTYPE,0")
+        mapdl.pstres(1)
+        mapdl.flst(2, 4, 4, "ORDE", 2)
+        mapdl.fitem(2, 1)
+        mapdl.fitem(2, -4)
+        mapdl.run("/GO")
+        mapdl.dl("P51X", "", "UZ", 0)
+        mapdl.flst(2, 1, 3, "ORDE", 1)
+        mapdl.fitem(2, 1)
+        mapdl.run("/GO")
+        mapdl.dk("P51X", "", 0, "", 0, "UX", "UY", "", "", "")
+        mapdl.flst(2, 1, 3, "ORDE", 1)
+        mapdl.fitem(2, 2)
+        mapdl.run("/GO")
+        mapdl.dk("P51X", "", 0, "", 0, "UY", "", "", "", "")
