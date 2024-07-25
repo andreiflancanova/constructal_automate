@@ -1,13 +1,25 @@
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.response import Response
-from rest_framework import status
+from django.shortcuts import get_object_or_404
 
 from cbeb.models import StiffenedPlateAnalysis
 from cbeb.serializers import StiffenedPlateAnalysisSerializer
 
+
 class StiffenedPlateAnalysisViewSet(viewsets.ModelViewSet):
     queryset = StiffenedPlateAnalysis.objects.all()
     serializer_class = StiffenedPlateAnalysisSerializer
+
+    def list(self, request):
+        queryset = StiffenedPlateAnalysis.objects.all()
+        serializer = StiffenedPlateAnalysisSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def retrieve(self, request, pk=None):
+        queryset = StiffenedPlateAnalysis.objects.all()
+        stiffened_plate_analysis = get_object_or_404(queryset, pk=pk)
+        serializer = StiffenedPlateAnalysisSerializer(stiffened_plate_analysis)
+        return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
