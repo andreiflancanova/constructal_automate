@@ -1,1 +1,2 @@
 from .stiffened_plate_analysis_views import StiffenedPlateAnalysisViewSet
+from .biaxial_elastic_buckling_views import BiaxialElasticBucklingViewSet

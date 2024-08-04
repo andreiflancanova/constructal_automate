@@ -79,22 +79,21 @@ class StiffenedPlateAnalysisService():
             if self.is_stiffened_plate(h_s, t_s):
                 self.define_stiffened_plate_element_type_section_and_material(mapdl, E, poisson_ratio, t_1, t_s)
                 self.define_stiffened_plate_geometry(mapdl, a, b, N_ts, N_ls, h_s)
-                self.define_stiffened_plate_discretization(mapdl, mesh_size)
+                self.define_stiffened_plate_discretization(mapdl, mesh_size, stiffened_plate_analysis)
                 self.define_stiffened_plate_components_and_apply_boundary_conditions(mapdl, a, b)
             else:
                 self.define_plate_element_type_section_and_material(mapdl, E, poisson_ratio, t_1)
                 self.define_plate_element_type_section_and_material(mapdl, E, poisson_ratio, t_1)
                 self.define_plate_geometry(mapdl, a, b)
-                self.define_plate_discretization(mapdl, mesh_size)
+                self.define_plate_discretization(mapdl, mesh_size, stiffened_plate_analysis)
                 self.define_plate_boundary_conditions(mapdl, a, b)
 
             # Salvar as alterações
             mapdl.save(slab='ALL')
             # Retornar ao contexto original
-            mapdl.cwd(mapdl_connection.temp_run_location_absolute_path)
-            mapdl.clear()
-            mapdl.filname(fname=mapdl_connection.jobname, key=0)
-            mapdl.resume(fname=f'{mapdl_connection.temp_run_location_absolute_path}/{mapdl_connection.jobname}.db')
+            # mapdl.cwd(mapdl_connection.temp_run_location_absolute_path)
+            # mapdl.filname(fname=mapdl_connection.jobname, key=1)
+            # mapdl.resume(fname=f'{mapdl_connection.temp_run_location_absolute_path}/file.db')
             mapdl._close_apdl_log()
         finally:
             mapdl_connection_pool.return_connection(mapdl_connection)
@@ -131,8 +130,8 @@ class StiffenedPlateAnalysisService():
     def create_mapdl_initial_files(self, mapdl, analysis_name, analysis_cwd_path, analysis_log_path, stiffened_plate_analysis):
         try:
             mapdl.clear()
-            mapdl.filname(fname=analysis_name, key=0)
             mapdl.cwd(analysis_cwd_path)
+            mapdl.filname(fname=analysis_name, key=1)
             mapdl.open_apdl_log(filename=analysis_log_path, mode='a')
             mapdl.title(analysis_name)
             mapdl.save(slab='ALL')
@@ -249,7 +248,7 @@ class StiffenedPlateAnalysisService():
         mapdl.mshape(0, "2D")
         mapdl.mshkey(0)
 
-    def define_stiffened_plate_discretization(self, mapdl, mesh_size):
+    def define_stiffened_plate_discretization(self, mapdl, mesh_size, stiffened_plate_analysis):
         # Discretização
         # # Discretização da placa
         mapdl.type(1)
@@ -283,9 +282,14 @@ class StiffenedPlateAnalysisService():
         # mapdl.shrink(ratio="0.000001")
         # mapdl.nummrg(label="NODE",toler="", gtoler=POWER, action="", switch="LOW")
         # mapdl.nummrg(label="KP",toler="", gtoler=POWER, action="", switch="LOW")
+        mapdl.allsel(labt="BELOW", entity="AREA")
         mapdl.aptn("ALL")
-        mapdl.nummrg(label="ALL", toler="", gtoler="", action="", switch="LOW")
-
+        # mapdl.nummrg(label="ALL", toler="", gtoler="", action="", switch="LOW")
+        mapdl.nummrg(label="NODE", toler="", gtoler="", action="", switch="LOW")
+        mapdl.nummrg(label="KP", toler="", gtoler="", action="", switch="LOW")
+        num_elem = mapdl.get('NELEM', 'ELEM', '', 'count')
+        stiffened_plate_analysis.num_elem = num_elem
+        stiffened_plate_analysis.save()
         # Sair do PREP7 para ir para o /SOLU
         mapdl.finish()
 
@@ -398,6 +402,7 @@ class StiffenedPlateAnalysisService():
 
         # Aplicar BCs de translação ao longo de z das bordas dos enrijecedores
         mapdl.dl(LINES_BORDA_ENRIJECEDORES, "", "UZ", 0)
+        mapdl.finish()
 
     def is_stiffened_plate(self, h_s, t_s):
         return h_s != 0.00 and t_s != 0.00
@@ -440,7 +445,7 @@ class StiffenedPlateAnalysisService():
         mapdl.mshape(0, "2D")
         mapdl.mshkey(0)
 
-    def define_plate_discretization(self, mapdl, mesh_size):
+    def define_plate_discretization(self, mapdl, mesh_size, stiffened_plate_analysis):
         mapdl.aesize("ALL", mesh_size)
         mapdl.cm("_Y", "AREA")
         mapdl.asel("", "", "", 1)
@@ -451,6 +456,9 @@ class StiffenedPlateAnalysisService():
         mapdl.cmdele("_Y")
         mapdl.cmdele("_Y1")
         mapdl.cmdele("_Y2")
+        num_elem = mapdl.get('NELEM', 'ELEM', '', 'count')
+        stiffened_plate_analysis.num_elem = num_elem
+        stiffened_plate_analysis.save()
         mapdl.finish()
 
     # TODO: Refatorar esse método para usar Selection Logic
@@ -471,3 +479,4 @@ class StiffenedPlateAnalysisService():
         mapdl.fitem(2, 2)
         mapdl.run("/GO")
         mapdl.dk("P51X", "", 0, "", 0, "UY", "", "", "", "")
+        mapdl.finish()

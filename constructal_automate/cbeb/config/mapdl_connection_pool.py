@@ -41,21 +41,24 @@ class MapdlConnectionPool:
         self.args = args
         self.kwargs = kwargs
 
-        jobnames = [f'{MAPDL_TEMP_DIR_PREFIX}_{i:02d}' for i in range(self.pool_size)]
-        run_locations = [Path(f'{self.base_dir}/{jobname}') for jobname in jobnames]
+        analysis_dirs = [f'{MAPDL_TEMP_DIR_PREFIX}_{i}' for i in range(self.pool_size)]
+        jobnames = ['file' for _ in range(self.pool_size)]
+        run_locations = [Path(f'{self.base_dir}/{analysis_dir}') for analysis_dir in analysis_dirs]
 
         try:
             self.mapdl_pool = MapdlPool(
                 n_instances=self.pool_size,
+                run_location=self.base_dir,
+                names=f'{MAPDL_TEMP_DIR_PREFIX}',
                 exec_file=MAPDL_EXEC_FILE,
                 nproc=MAPDL_POOL_PROCESSORS_PER_CONNECTION,
                 loglevel=MAPDL_LOG_LEVEL,
                 start_timeout=MAPDL_START_TIMEOUT,
-                cleanup_on_exit=True
+                cleanup_on_exit=True,
             )
         except Exception as e:
             raise RuntimeError(f"Failed to initialize MAPDL pool: {e}")
-
+        
         self.available_connections = [
             MapdlConnection(connection, idx, str(run_location), jobname)
             for idx, (connection, run_location, jobname) in enumerate(zip(self.mapdl_pool, run_locations, jobnames))
