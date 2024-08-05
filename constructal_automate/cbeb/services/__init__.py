@@ -1,2 +1,2 @@
 from .stiffened_plate_analysis_service import StiffenedPlateAnalysisService
-from .biaxial_elastic_buckling_service import BiaxialElasticBucklingService
+from .elastic_buckling_service import ElasticBucklingService

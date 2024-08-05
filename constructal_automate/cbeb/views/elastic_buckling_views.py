@@ -1,13 +1,13 @@
-from cbeb.models.biaxial_elastic_buckling import BiaxialElasticBuckling
-from cbeb.serializers.biaxial_elastic_buckling_serializer import BiaxialElasticBucklingSerializer
+from cbeb.models.elastic_buckling import ElasticBuckling
+from cbeb.serializers.elastic_buckling_serializer import ElasticBucklingSerializer
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 
 
-class BiaxialElasticBucklingViewSet(viewsets.ModelViewSet):
-    queryset = BiaxialElasticBuckling.objects.all()
-    serializer_class = BiaxialElasticBucklingSerializer
+class ElasticBucklingViewSet(viewsets.ModelViewSet):
+    queryset = ElasticBuckling.objects.all()
+    serializer_class = ElasticBucklingSerializer
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

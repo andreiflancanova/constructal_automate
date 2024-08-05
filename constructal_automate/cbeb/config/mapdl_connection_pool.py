@@ -74,6 +74,7 @@ class MapdlConnectionPool:
             return connection
 
     def return_connection(self, mapdl_connection):
+        # TODO: Corrigir erro que ocorre quando se faz uma análise e a seção gRPC fecha
         with self._lock:
             self.occupied_connections.remove(mapdl_connection)
             self.available_connections.append(mapdl_connection)

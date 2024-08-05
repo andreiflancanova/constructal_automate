@@ -50,6 +50,7 @@ class StiffenedPlateAnalysisService():
 
         a = stiffened_plate.plate.a
         b = stiffened_plate.plate.b
+        id = stiffened_plate.id
         E = material.young_modulus
         poisson_ratio = material.poisson_ratio
         t_1 = stiffened_plate.t_1
@@ -61,7 +62,7 @@ class StiffenedPlateAnalysisService():
         N_ls = stiffened_plate.N_ls
         mesh_size = stiffened_plate_analysis.mesh_size
 
-        analysis_name = f'phi_{phi}_Nls_{N_ls}_Nts_{N_ts}_k_{k}'
+        analysis_name = f'phi_{phi:.2f}_L_{N_ls}_T_{N_ts}_k_{k:.2f}_SP_{id}'
         self.create_dir_structure(stiffened_plate_analysis.case_study, analysis_name)
 
         analysis_cwd_path = f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH}/{stiffened_plate_analysis.case_study}/{analysis_name}'
@@ -309,7 +310,7 @@ class StiffenedPlateAnalysisService():
         mapdl.cm(KP_INFERIOR_ESQUERDO, "KP")
         mapdl.dk(KP_INFERIOR_ESQUERDO, "UX", "UY", 0, 0)
 
-        # # Selecionar KP Superior Esquerdo
+        # Selecionar KP Superior Esquerdo
         mapdl.cmsel("S", PLACA)
         mapdl.lsla("S")
         mapdl.ksll("S")
@@ -318,7 +319,7 @@ class StiffenedPlateAnalysisService():
         mapdl.cm(KP_SUPERIOR_ESQUERDO, "KP")
         mapdl.dk(KP_SUPERIOR_ESQUERDO, "UX", 0)
 
-        # # Selecionar KP Inferior Direito
+        # Selecionar KP Inferior Direito
         mapdl.cmsel("S", PLACA)
         mapdl.lsla("S")
         mapdl.ksll("S")
@@ -444,39 +445,85 @@ class StiffenedPlateAnalysisService():
         mapdl.asel("ALL")
         mapdl.mshape(0, "2D")
         mapdl.mshkey(0)
+        mapdl.cm(PLACA, "AREA")
 
     def define_plate_discretization(self, mapdl, mesh_size, stiffened_plate_analysis):
-        mapdl.aesize("ALL", mesh_size)
-        mapdl.cm("_Y", "AREA")
-        mapdl.asel("", "", "", 1)
-        mapdl.cm("_Y1", "AREA")
-        mapdl.chkmsh("AREA")
-        mapdl.cmsel("S", "_Y")
-        mapdl.amesh("_Y1")
-        mapdl.cmdele("_Y")
-        mapdl.cmdele("_Y1")
-        mapdl.cmdele("_Y2")
+        mapdl.type(1)
+        mapdl.mat(1)
+        mapdl.run("REAL")
+        mapdl.esys(0)
+        mapdl.secnum(1)
+        mapdl.aesize(PLACA, mesh_size)
+        mapdl.amesh(PLACA)
         num_elem = mapdl.get('NELEM', 'ELEM', '', 'count')
         stiffened_plate_analysis.num_elem = num_elem
         stiffened_plate_analysis.save()
-        mapdl.finish()
 
     # TODO: Refatorar esse método para usar Selection Logic
     def define_plate_boundary_conditions(self, mapdl, a, b):
-        mapdl.slashsolu()
-        mapdl.run("ANTYPE,0")
-        mapdl.pstres(1)
-        mapdl.flst(2, 4, 4, "ORDE", 2)
-        mapdl.fitem(2, 1)
-        mapdl.fitem(2, -4)
-        mapdl.run("/GO")
-        mapdl.dl("P51X", "", "UZ", 0)
-        mapdl.flst(2, 1, 3, "ORDE", 1)
-        mapdl.fitem(2, 1)
-        mapdl.run("/GO")
-        mapdl.dk("P51X", "", 0, "", 0, "UX", "UY", "", "", "")
-        mapdl.flst(2, 1, 3, "ORDE", 1)
-        mapdl.fitem(2, 2)
-        mapdl.run("/GO")
-        mapdl.dk("P51X", "", 0, "", 0, "UY", "", "", "", "")
+        mapdl.cmsel("S", PLACA)
+        mapdl.lsla("S")
+        mapdl.ksll("S")
+        mapdl.ksel("S", "LOC", "X", 0)
+        mapdl.ksel("R", "LOC", "Y", 0)
+        mapdl.cm(KP_INFERIOR_ESQUERDO, "KP")
+        mapdl.dk(KP_INFERIOR_ESQUERDO, "UX", "UY", 0, 0)
+        
+        # Selecionar KP Superior Esquerdo
+        mapdl.cmsel("S", PLACA)
+        mapdl.lsla("S")
+        mapdl.ksll("S")
+        mapdl.ksel("S", "LOC", "X", 0)
+        mapdl.ksel("R", "LOC", "Y", b)
+        mapdl.cm(KP_SUPERIOR_ESQUERDO, "KP")
+        mapdl.dk(KP_SUPERIOR_ESQUERDO, "UX", 0)
+        
+        # Selecionar KP Inferior Direito
+        mapdl.cmsel("S", PLACA)
+        mapdl.lsla("S")
+        mapdl.ksll("S")
+        mapdl.ksel("S", "LOC", "X", a)
+        mapdl.ksel("R", "LOC", "Y", 0)
+        mapdl.cm(KP_INFERIOR_DIREITO, "KP")
+        mapdl.dk(KP_INFERIOR_DIREITO, "UY", 0)
+
+        # Adicionando componentes da placa
+        # # Contorno da placa inteira
+        mapdl.cmsel("S", PLACA)
+        mapdl.lsla("S")
+        mapdl.cm(LINES_CONTORNO_PLACA, "LINE")
+
+        # # Direção Longitudinal
+        # ## Borda esquerda
+        mapdl.cmsel("S", LINES_CONTORNO_PLACA)
+        mapdl.lsel("R", "LOC", "X", 0)
+        mapdl.cm(LINES_CONTORNO_PLACA_ESQUERDA, "LINE")
+
+        # ## Borda direita
+        mapdl.cmsel("S", LINES_CONTORNO_PLACA)
+        mapdl.lsel("R", "LOC", "X", a)
+        mapdl.cm(LINES_CONTORNO_PLACA_DIREITA, "LINE")
+
+        mapdl.cmgrp(aname=LINES_CONTORNO_PLACA_TS,
+            cnam1=LINES_CONTORNO_PLACA_ESQUERDA,
+            cnam2=LINES_CONTORNO_PLACA_DIREITA)
+
+        # # Direção Longitudinal
+        # ## Borda inferior
+        mapdl.cmsel("S", LINES_CONTORNO_PLACA)
+        mapdl.lsel("R", "LOC", "Y", 0)
+        mapdl.cm(LINES_CONTORNO_PLACA_INFERIOR, "LINE")
+
+        # ## Borda superior
+        mapdl.cmsel("S", LINES_CONTORNO_PLACA)
+        mapdl.lsel("R", "LOC", "Y", b)
+        mapdl.cm(LINES_CONTORNO_PLACA_SUPERIOR, "LINE")
+
+        # ## Bordas paralelas aos enrijecedores longitudinais   
+        mapdl.cmgrp(aname=LINES_CONTORNO_PLACA_LS,
+            cnam1=LINES_CONTORNO_PLACA_INFERIOR,
+            cnam2=LINES_CONTORNO_PLACA_SUPERIOR)
+
+        #Aplicar BCs de translação ao longo de z das linhas da placa
+        mapdl.dl(LINES_CONTORNO_PLACA, "", "UZ", 0)
         mapdl.finish()
