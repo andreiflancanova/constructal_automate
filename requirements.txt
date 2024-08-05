@@ -4,6 +4,6 @@ scipy
 markdown
 django-filter
 mysqlclient
-wheel
 python-dotenv
 matplotlib
+ansys-mapdl-core==0.68.0

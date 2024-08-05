@@ -19,12 +19,11 @@ class StiffenedPlateViewSet(viewsets.ModelViewSet):
 
     def retrieve(self, request, pk=None):
         queryset = StiffenedPlate.objects.all()
-        plate = get_object_or_404(queryset, pk=pk)
-        serializer = StiffenedPlateSerializer(plate)
+        stiffened_plate = get_object_or_404(queryset, pk=pk)
+        serializer = StiffenedPlateSerializer(stiffened_plate)
         return Response(serializer.data)
 
     def create(self, request):
-        print(request.data)
         serializer = StiffenedPlateSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()

@@ -12,7 +12,6 @@ class StiffenedPlateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
 
         plate_id = validated_data.pop('plate').id
-        print(plate_id)
 
         associated_plate = get_object_or_404(Plate, id=plate_id)
 
