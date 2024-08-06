@@ -7,3 +7,4 @@ class Material(models.Model):
     young_modulus = models.DecimalField(max_digits=8, decimal_places=2)
     poisson_ratio = models.DecimalField(max_digits=4, decimal_places=3)
     yielding_stress = models.DecimalField(max_digits=6, decimal_places=2)
+    tang_modulus = models.DecimalField(max_digits=8, decimal_places=2)

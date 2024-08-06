@@ -1,4 +1,4 @@
-from cbeb.models import StiffenedPlateAnalysis, ElasticBuckling
+from cbeb.models import StiffenedPlateAnalysis
 from csg.models import StiffenedPlate
 from cbeb.config.mapdl_connection_pool import MapdlConnectionPool
 from ansys.mapdl.core.errors import MapdlRuntimeError
@@ -59,6 +59,7 @@ class ElasticBucklingService():
         mapdl.slashsolu()
         mapdl.cmsel("ALL")
 
+# TODO: Modificar lógica desse método para depender de BucklingType ao invés do csi_y
     def apply_loads(self, mapdl, h_s, t_s, n_x, csi_y):
         if self.is_stiffened_plate(h_s, t_s):
             if self.is_biaxial_buckling(csi_y):
