@@ -1,10 +1,8 @@
 import atexit
 import os
-from dotenv import load_dotenv
 from django.apps import AppConfig
 from .config import MapdlConnectionPool
 
-load_dotenv()
 MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH = os.getenv('MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH')
 MAPDL_POOL_NUMBER_OF_CONNECTIONS = int(os.getenv('MAPDL_POOL_NUMBER_OF_CONNECTIONS'))
 

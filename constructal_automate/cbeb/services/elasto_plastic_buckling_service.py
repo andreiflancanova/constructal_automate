@@ -2,6 +2,7 @@ from cbeb.models import StiffenedPlateAnalysis
 from cbeb.config.mapdl_connection_pool import MapdlConnectionPool
 from csg.models import StiffenedPlate
 
+
 class ElastoPlasticBucklingService():
     def create(self,
                stiffened_plate_analysis: StiffenedPlateAnalysis,
@@ -13,6 +14,7 @@ class ElastoPlasticBucklingService():
         rst_file_path = stiffened_plate_analysis.analysis_rst_file_path
         material = stiffened_plate_analysis.material
         sigma_e = material.yielding_stress
+        tang_mod = material.tang_modulus
         n_e = sigma_e*t_1
 
         mapdl_connection_pool = MapdlConnectionPool()
@@ -27,7 +29,7 @@ class ElastoPlasticBucklingService():
         mapdl.upgeom(factor=w0, lstep="LAST", sbstep="LAST", fname=rst_file_path, ext="rst")
         mapdl.tb(lab="BISO", mat=material.id, ntemp=1, npts=2)
         mapdl.tbtemp(0)
-        mapdl.tbdata("", sigma_e, 0, "")
+        mapdl.tbdata("", sigma_e, tang_mod, "")
         mapdl.run("/SOL")
         mapdl.run("ANTYPE,0")
         mapdl.nlgeom(1)
