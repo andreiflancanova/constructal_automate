@@ -54,6 +54,7 @@ class MapdlConnectionPool:
                 nproc=MAPDL_POOL_PROCESSORS_PER_CONNECTION,
                 loglevel=MAPDL_LOG_LEVEL,
                 start_timeout=MAPDL_START_TIMEOUT,
+                remove_temp_files=True,
                 cleanup_on_exit=True,
             )
         except Exception as e:

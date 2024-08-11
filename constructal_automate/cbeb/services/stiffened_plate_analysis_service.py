@@ -2,42 +2,43 @@ import os
 from cbeb.config.mapdl_connection_pool import MapdlConnectionPool
 from cbeb.models.material import Material
 from cbeb.models.stiffened_plate_analysis import StiffenedPlateAnalysis
+from cbeb.models.processing_status import ProcessingStatus
 from csg.models.stiffened_plate import StiffenedPlate
-from dotenv import load_dotenv
 from pathlib import Path
-from django.shortcuts import get_object_or_404
 
-load_dotenv()
 MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH = os.getenv('MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH')
 
-#TODO: Remover Ansys Components para um arquivo externo
-ENRIJECEDOR_LONGITUDINAL = "enrijecedor_longitudinal"
-ENRIJECEDOR_TRANSVERSAL = "enrijecedor_transversal"
+ENRIJECEDOR_LONGITUDINAL_PRE_APTN = os.getenv('ENRIJECEDOR_LONGITUDINAL_PRE_APTN')
+ENRIJECEDOR_TRANSVERSAL_PRE_APTN = os.getenv('ENRIJECEDOR_TRANSVERSAL_PRE_APTN')
 
-ENRIJECEDORES_LONGITUDINAIS = "enrijecedores_longitudinais"
-ENRIJECEDORES_TRANSVERSAIS = "enrijecedores_transversais"
-PLACA = "placa"
-CONJUNTO = "conjunto"
+ENRIJECEDORES_LONGITUDINAIS_PRE_APTN = os.getenv('ENRIJECEDORES_LONGITUDINAIS_PRE_APTN')
+ENRIJECEDORES_TRANSVERSAIS_PRE_APTN = os.getenv('ENRIJECEDORES_TRANSVERSAIS_PRE_APTN')
+PLACA_PRE_APTN = os.getenv('PLACA_PRE_APTN')
+ENRIJECEDORES_LONGITUDINAIS_POS_APTN = os.getenv('ENRIJECEDORES_LONGITUDINAIS_POS_APTN')
+ENRIJECEDORES_TRANSVERSAIS_POS_APTN = os.getenv('ENRIJECEDORES_TRANSVERSAIS_POS_APTN')
+PLACA_POS_APTN = os.getenv('PLACA_POS_APTN')
+CONJUNTO = os.getenv('CONJUNTO')
 
-KP_INFERIOR_ESQUERDO = "kp_inferior_esquerdo"
-KP_SUPERIOR_ESQUERDO = "kp_superior_esquerdo"
-KP_INFERIOR_DIREITO = "kp_inferior_direito"
-KP_SUPERIOR_DIREITO = "kp_superior_direito"
+KP_INFERIOR_ESQUERDO = os.getenv('KP_INFERIOR_ESQUERDO')
+KP_SUPERIOR_ESQUERDO = os.getenv('KP_SUPERIOR_ESQUERDO')
+KP_INFERIOR_DIREITO = os.getenv('KP_INFERIOR_DIREITO')
+KP_SUPERIOR_DIREITO = os.getenv('KP_SUPERIOR_DIREITO')
 
-LINES_CONTORNO_PLACA = "lines_contorno_placa"
-LINES_CONTORNO_PLACA_ESQUERDA = "lines_contorno_placa_esquerda"
-LINES_CONTORNO_PLACA_DIREITA = "lines_contorno_placa_direita"
-LINES_CONTORNO_PLACA_TS = "lines_contorno_placa_ts"
-LINES_CONTORNO_PLACA_INFERIOR = "lines_contorno_placa_inferior"
-LINES_CONTORNO_PLACA_SUPERIOR = "lines_contorno_placa_superior"
-LINES_CONTORNO_PLACA_LS = "lines_contorno_placa_ls"
-LINES_BORDA_LS_ESQUERDA = "lines_borda_ls_esquerda"
-LINES_BORDA_LS_DIREITA = "lines_borda_ls_direita"
-LINES_BORDA_LS = "lines_borda_ls"
-LINES_BORDA_TS_INFERIOR = "lines_borda_ts_inferior"
-LINES_BORDA_TS_SUPERIOR = "lines_borda_ts_superior"
-LINES_BORDA_TS = "lines_borda_ts"
-LINES_BORDA_ENRIJECEDORES = "lines_borda_enrijecedores"
+LINES_CONTORNO_PLACA = os.getenv('LINES_CONTORNO_PLACA')
+LINES_CONTORNO_PLACA_ESQUERDA = os.getenv('LINES_CONTORNO_PLACA_ESQUERDA')
+LINES_CONTORNO_PLACA_DIREITA = os.getenv('LINES_CONTORNO_PLACA_DIREITA')
+LINES_CONTORNO_PLACA_TS = os.getenv('LINES_CONTORNO_PLACA_TS')
+LINES_CONTORNO_PLACA_INFERIOR = os.getenv('LINES_CONTORNO_PLACA_INFERIOR')
+LINES_CONTORNO_PLACA_SUPERIOR = os.getenv('LINES_CONTORNO_PLACA_SUPERIOR')
+LINES_CONTORNO_PLACA_LS = os.getenv('LINES_CONTORNO_PLACA_LS')
+LINES_BORDA_LS_ESQUERDA = os.getenv('LINES_BORDA_LS_ESQUERDA')
+LINES_BORDA_LS_DIREITA = os.getenv('LINES_BORDA_LS_DIREITA')
+LINES_BORDA_LS = os.getenv('LINES_BORDA_LS')
+LINES_BORDA_TS_INFERIOR = os.getenv('LINES_BORDA_TS_INFERIOR')
+LINES_BORDA_TS_SUPERIOR = os.getenv('LINES_BORDA_TS_SUPERIOR')
+LINES_BORDA_TS = os.getenv('LINES_BORDA_TS')
+LINES_BORDA_ENRIJECEDORES = os.getenv('LINES_BORDA_ENRIJECEDORES')
+PENDING_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Pending')
 
 
 class StiffenedPlateAnalysisService():
@@ -80,8 +81,8 @@ class StiffenedPlateAnalysisService():
             if self.is_stiffened_plate(h_s, t_s):
                 self.define_stiffened_plate_element_type_section_and_material(mapdl, E, poisson_ratio, t_1, t_s)
                 self.define_stiffened_plate_geometry(mapdl, a, b, N_ts, N_ls, h_s)
-                self.define_stiffened_plate_discretization(mapdl, mesh_size, stiffened_plate_analysis)
-                self.define_stiffened_plate_components_and_apply_boundary_conditions(mapdl, a, b)
+                self.define_stiffened_plate_discretization(mapdl, a, b, t_1, N_ts, N_ls, h_s, mesh_size, stiffened_plate_analysis)
+                self.define_stiffened_plate_components_and_apply_boundary_conditions(mapdl, a, b, t_1)
             else:
                 self.define_plate_element_type_section_and_material(mapdl, E, poisson_ratio, t_1)
                 self.define_plate_element_type_section_and_material(mapdl, E, poisson_ratio, t_1)
@@ -139,6 +140,8 @@ class StiffenedPlateAnalysisService():
         finally:
             stiffened_plate_analysis.analysis_dir_path = analysis_cwd_path
             stiffened_plate_analysis.analysis_lgw_file_path = analysis_log_path
+            stiffened_plate_analysis.elastic_buckling_status = PENDING_PROCESSING_STATUS
+            stiffened_plate_analysis.elastoplastic_buckling_status = PENDING_PROCESSING_STATUS
             stiffened_plate_analysis.save()
 
     def define_stiffened_plate_element_type_section_and_material(self, mapdl, E, poisson_ratio, t_1, t_s):
@@ -179,16 +182,16 @@ class StiffenedPlateAnalysisService():
         mapdl.secoffset("MID")
         mapdl.seccontrol(0, 0, 0, 0, 1, 1, 1)
 
-        # # Seção dos enrijecedores longitudinais
-        mapdl.run("sect,3,shell")
-        mapdl.secdata(t_s, 1, 0, 3)
-        mapdl.secoffset("MID")
-        mapdl.seccontrol(0, 0, 0, 0, 1, 1, 1)
+        # Seção dos enrijecedores longitudinais
+        # mapdl.run("sect,3,shell")
+        # mapdl.secdata(t_s, 1, 0, 3)
+        # mapdl.secoffset("MID")
+        # mapdl.seccontrol(0, 0, 0, 0, 1, 1, 1)
 
     def define_stiffened_plate_geometry(self, mapdl, a, b, N_ts, N_ls, h_s):
         # Definir espaçamento dos enrijecedores
-        a_ts = float(round(a/(N_ts+1), 3))
-        b_ls = float(round(b/(N_ls+1), 3))
+        a_ts = float(round(a/(N_ts+1), 0))
+        b_ls = float(round(b/(N_ls+1), 0))
 
         # Definir keypoints
         mapdl.k(1, a_ts, 0, 0)
@@ -211,12 +214,12 @@ class StiffenedPlateAnalysisService():
         # Selection Logic para criar os enrijecedores
         # # Enrijecedores Transversais
         mapdl.asel("S", "LOC", "X", 0.99*a_ts, 1.01*a_ts)
-        mapdl.cm(ENRIJECEDOR_TRANSVERSAL, "AREA")
-        mapdl.agen(itime=N_ts, na1=ENRIJECEDOR_TRANSVERSAL, dx=a_ts)
+        mapdl.cm(ENRIJECEDOR_TRANSVERSAL_PRE_APTN, "AREA")
+        mapdl.agen(itime=N_ts, na1=ENRIJECEDOR_TRANSVERSAL_PRE_APTN, dx=a_ts)
 
         # # Componente dos Enrijecedores Transversais
         mapdl.asel("ALL")
-        mapdl.cm(ENRIJECEDORES_TRANSVERSAIS, "AREA")
+        mapdl.cm(ENRIJECEDORES_TRANSVERSAIS_PRE_APTN, "AREA")
 
         # Enrijecedores Longitudinais
         mapdl.flst(2, 4, 3)
@@ -228,37 +231,81 @@ class StiffenedPlateAnalysisService():
 
         mapdl.asel("ALL")
         mapdl.asel("S", "LOC", "Y", 0.99*b_ls, 1.01*b_ls)
-        mapdl.cm(ENRIJECEDOR_LONGITUDINAL, "AREA")
+        mapdl.cm(ENRIJECEDOR_LONGITUDINAL_PRE_APTN, "AREA")
 
-        mapdl.agen(itime=N_ls, na1=ENRIJECEDOR_LONGITUDINAL, dy=b_ls)
-        mapdl.cmsel("S", ENRIJECEDORES_TRANSVERSAIS)
+        mapdl.agen(itime=N_ls, na1=ENRIJECEDOR_LONGITUDINAL_PRE_APTN, dy=b_ls)
+        mapdl.cmsel("S", ENRIJECEDORES_TRANSVERSAIS_PRE_APTN)
 
         # # Componente dos Enrijecedores Longitudinais
         mapdl.asel("INVE", "AREA")
-        mapdl.cm(ENRIJECEDORES_LONGITUDINAIS, "AREA")
+        mapdl.cm(ENRIJECEDORES_LONGITUDINAIS_PRE_APTN, "AREA")
 
         mapdl.rectng(x1=0, x2=a, y1=0, y2=b)
-        mapdl.cmsel("S", ENRIJECEDORES_TRANSVERSAIS)
-        mapdl.cmsel("A", ENRIJECEDORES_LONGITUDINAIS)
+        mapdl.cmsel("S", ENRIJECEDORES_TRANSVERSAIS_PRE_APTN)
+        mapdl.cmsel("A", ENRIJECEDORES_LONGITUDINAIS_PRE_APTN)
         mapdl.asel("INVE", "AREA")
-        mapdl.cm(PLACA, "AREA")
+        mapdl.cm(PLACA_PRE_APTN, "AREA")
 
-        # Para todas as áreas aparecerem quando dar o Plot Areas
+        # mapdl.mshape(0, "2D")
+        # mapdl.mshkey(0)
+
+    def define_stiffened_plate_discretization(self, mapdl, a, b, t_1, N_ts, N_ls, h_s, mesh_size, stiffened_plate_analysis):
+        a_ts = float(round(a/(N_ts+1), 0))
+        b_ls = float(round(b/(N_ls+1), 0))
+        
+        # Mergear áreas coincidentes
+        mapdl.allsel(labt="ALL", entity="AREA")
+        # mapdl.boptn(lab="KEEP", value="YES")
+        mapdl.aptn(na1="ALL")
+        # There is at least 1 small equation
+
+        OFFSET_PERCENTUAL_BORDA_INICIAL = 0.40
+        OFFSET_PERCENTUAL_BORDA_FINAL = 0.60
+        OFFSET_PERCENTUAL_Z_INICIAL = 0.40
+        OFFSET_PERCENTUAL_Z_FINAL = 0.60
+        
+        # Criar componente da PLACA_POS_APTN
         mapdl.asel("ALL")
+        mapdl.asel("S", "LOC", "X", OFFSET_PERCENTUAL_BORDA_INICIAL*float(a_ts), OFFSET_PERCENTUAL_BORDA_FINAL*float(a_ts))
+        for i in range(N_ts):
+            mapdl.asel("A", "LOC", "X", ((i+1)+OFFSET_PERCENTUAL_BORDA_INICIAL)*float(a_ts), ((i+1)+OFFSET_PERCENTUAL_BORDA_FINAL)*float(a_ts))
+        mapdl.asel("R", "LOC", "Z", -0.5*float(t_1), 0.5*float(t_1))
+        mapdl.cm(PLACA_POS_APTN, "AREA")
 
+        # Criar componente da ENRIJECEDORES_LONGITUDINAIS_POS_APTN
+        mapdl.asel("ALL")
+        mapdl.asel("S", "LOC", "X", OFFSET_PERCENTUAL_BORDA_INICIAL*float(a_ts), OFFSET_PERCENTUAL_BORDA_FINAL*float(a_ts))
+        for i in range(N_ts):
+            mapdl.asel("A", "LOC", "X", ((i+1)+OFFSET_PERCENTUAL_BORDA_INICIAL)*float(a_ts), ((i+1)+OFFSET_PERCENTUAL_BORDA_FINAL)*float(a_ts))
+        mapdl.asel("R", "LOC", "Z", OFFSET_PERCENTUAL_Z_INICIAL*float(h_s), OFFSET_PERCENTUAL_Z_FINAL*float(h_s))
+        mapdl.cm(ENRIJECEDORES_LONGITUDINAIS_POS_APTN, "AREA")
+
+        # Criar componente da ENRIJECEDORES_TRANSVERSAIS_POS_APTN
+        mapdl.asel("ALL")
+        mapdl.asel("S", "LOC", "Y", OFFSET_PERCENTUAL_BORDA_INICIAL*float(b_ls), OFFSET_PERCENTUAL_BORDA_FINAL*float(b_ls))
+        for i in range(N_ls):
+            mapdl.asel("A", "LOC", "Y", ((i+1)+OFFSET_PERCENTUAL_BORDA_INICIAL)*float(b_ls), ((i+1)+0.52)*float(b_ls))
+        mapdl.asel("R", "LOC", "Z", OFFSET_PERCENTUAL_Z_INICIAL*float(h_s), OFFSET_PERCENTUAL_Z_FINAL*float(h_s))
+        mapdl.cm(ENRIJECEDORES_TRANSVERSAIS_POS_APTN, "AREA")
+
+        # mapdl.asel("ALL")
+        mapdl.cmsel("ALL")
+        mapdl.nummrg(label="ALL", toler="", gtoler="", action="", switch="LOW")
+
+        # Discretização
+        # # Discretização da placa
+        # mapdl.asel("ALL")
+        mapdl.cmsel("ALL")
         mapdl.mshape(0, "2D")
         mapdl.mshkey(0)
 
-    def define_stiffened_plate_discretization(self, mapdl, mesh_size, stiffened_plate_analysis):
-        # Discretização
-        # # Discretização da placa
         mapdl.type(1)
         mapdl.mat(1)
         mapdl.run("REAL")
         mapdl.esys(0)
         mapdl.secnum(1)
-        mapdl.aesize(PLACA, mesh_size)
-        mapdl.amesh(PLACA)
+        mapdl.aesize(PLACA_POS_APTN, mesh_size)
+        mapdl.amesh(PLACA_POS_APTN)
 
         # # Discretização dos enrijecedores transversais
         mapdl.type(1)
@@ -266,35 +313,30 @@ class StiffenedPlateAnalysisService():
         mapdl.run("REAL")
         mapdl.esys(0)
         mapdl.secnum(2)
-        mapdl.aesize(ENRIJECEDORES_TRANSVERSAIS, mesh_size)
-        mapdl.amesh(ENRIJECEDORES_TRANSVERSAIS)
+        mapdl.aesize(ENRIJECEDORES_TRANSVERSAIS_POS_APTN, mesh_size)
+        mapdl.amesh(ENRIJECEDORES_TRANSVERSAIS_POS_APTN)
 
         # # Discretização dos enrijecedores longitudinais
         mapdl.type(1)
         mapdl.mat(1)
         mapdl.run("REAL")
         mapdl.esys(0)
-        mapdl.secnum(3)
-        mapdl.aesize(ENRIJECEDORES_LONGITUDINAIS, mesh_size)
-        mapdl.amesh(ENRIJECEDORES_LONGITUDINAIS)
+        mapdl.secnum(2)
+        mapdl.aesize(ENRIJECEDORES_LONGITUDINAIS_POS_APTN, mesh_size)
+        mapdl.amesh(ENRIJECEDORES_LONGITUDINAIS_POS_APTN)
 
-        # Mergear áreas coincidentes
-        # POWER = "0.1"
-        # mapdl.shrink(ratio="0.000001")
-        # mapdl.nummrg(label="NODE",toler="", gtoler=POWER, action="", switch="LOW")
-        # mapdl.nummrg(label="KP",toler="", gtoler=POWER, action="", switch="LOW")
-        mapdl.allsel(labt="BELOW", entity="AREA")
-        mapdl.aptn("ALL")
+        # mapdl.asel("ALL")
         # mapdl.nummrg(label="ALL", toler="", gtoler="", action="", switch="LOW")
-        mapdl.nummrg(label="NODE", toler="", gtoler="", action="", switch="LOW")
-        mapdl.nummrg(label="KP", toler="", gtoler="", action="", switch="LOW")
+        # mapdl.nummrg(label="NODE", toler="", gtoler="", action="", switch="LOW")
+        # mapdl.nummrg(label="KP", toler="", gtoler="", action="", switch="LOW")
+
         num_elem = mapdl.get('NELEM', 'ELEM', '', 'count')
         stiffened_plate_analysis.num_elem = num_elem
         stiffened_plate_analysis.save()
         # Sair do PREP7 para ir para o /SOLU
         mapdl.finish()
 
-    def define_stiffened_plate_components_and_apply_boundary_conditions(self, mapdl, a, b):
+    def define_stiffened_plate_components_and_apply_boundary_conditions(self, mapdl, a, b, t_1):
         # Entrar no /SOLU
         mapdl.slashsolu()
         mapdl.run("ANTYPE,0")
@@ -302,7 +344,8 @@ class StiffenedPlateAnalysisService():
 
         # Boundary Conditions
         # # Selecionar KP Inferior Esquerdo
-        mapdl.cmsel("S", PLACA)
+        mapdl.cmsel("ALL")
+        mapdl.cmsel("S", PLACA_POS_APTN)
         mapdl.lsla("S")
         mapdl.ksll("S")
         mapdl.ksel("S", "LOC", "X", 0)
@@ -311,7 +354,8 @@ class StiffenedPlateAnalysisService():
         mapdl.dk(KP_INFERIOR_ESQUERDO, "UX", "UY", 0, 0)
 
         # Selecionar KP Superior Esquerdo
-        mapdl.cmsel("S", PLACA)
+        mapdl.cmsel("ALL")
+        mapdl.cmsel("S", PLACA_POS_APTN)
         mapdl.lsla("S")
         mapdl.ksll("S")
         mapdl.ksel("S", "LOC", "X", 0)
@@ -320,7 +364,8 @@ class StiffenedPlateAnalysisService():
         mapdl.dk(KP_SUPERIOR_ESQUERDO, "UX", 0)
 
         # Selecionar KP Inferior Direito
-        mapdl.cmsel("S", PLACA)
+        mapdl.cmsel("ALL")
+        mapdl.cmsel("S", PLACA_POS_APTN)
         mapdl.lsla("S")
         mapdl.ksll("S")
         mapdl.ksel("S", "LOC", "X", a)
@@ -330,78 +375,94 @@ class StiffenedPlateAnalysisService():
 
         # Adicionando componentes da placa
         # # Contorno da placa inteira
-        mapdl.cmsel("S", PLACA)
+        mapdl.cmsel("ALL")
+        mapdl.cmsel("S", PLACA_POS_APTN)
         mapdl.lsla("S")
+        mapdl.lsel("S", "LOC", "X", 0)
+        mapdl.lsel("A", "LOC", "X", a)
+        mapdl.lsel("A", "LOC", "Y", 0)
+        mapdl.lsel("A", "LOC", "Y", b)
+        mapdl.lsel("R", "LOC", "Z", 0, t_1)
         mapdl.cm(LINES_CONTORNO_PLACA, "LINE")
 
         # # Direção Longitudinal
         # ## Borda esquerda
+        mapdl.cmsel("ALL")
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "X", 0)
         mapdl.cm(LINES_CONTORNO_PLACA_ESQUERDA, "LINE")
 
         # ## Borda direita
+        mapdl.cmsel("ALL")
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "X", a)
         mapdl.cm(LINES_CONTORNO_PLACA_DIREITA, "LINE")
 
         mapdl.cmgrp(aname=LINES_CONTORNO_PLACA_TS,
-            cnam1=LINES_CONTORNO_PLACA_ESQUERDA,
-            cnam2=LINES_CONTORNO_PLACA_DIREITA)
+                    cnam1=LINES_CONTORNO_PLACA_ESQUERDA,
+                    cnam2=LINES_CONTORNO_PLACA_DIREITA)
 
         # # Direção Longitudinal
         # ## Borda inferior
+        mapdl.cmsel("ALL")
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "Y", 0)
         mapdl.cm(LINES_CONTORNO_PLACA_INFERIOR, "LINE")
 
         # ## Borda superior
+        mapdl.cmsel("ALL")
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "Y", b)
         mapdl.cm(LINES_CONTORNO_PLACA_SUPERIOR, "LINE")
 
-        # ## Bordas paralelas aos enrijecedores longitudinais   
+        # ## Bordas paralelas aos enrijecedores longitudinais
         mapdl.cmgrp(aname=LINES_CONTORNO_PLACA_LS,
-            cnam1=LINES_CONTORNO_PLACA_INFERIOR,
-            cnam2=LINES_CONTORNO_PLACA_SUPERIOR)
+                    cnam1=LINES_CONTORNO_PLACA_INFERIOR,
+                    cnam2=LINES_CONTORNO_PLACA_SUPERIOR)
 
-        #Aplicar BCs de translação ao longo de z das linhas da placa
+        # Aplicar BCs de translação ao longo de z das linhas da placa
+        mapdl.cmsel("ALL")
         mapdl.dl(LINES_CONTORNO_PLACA, "", "UZ", 0)
 
-        #Adicionando componentes dos enrijecedores
-        mapdl.cmsel("S", ENRIJECEDORES_TRANSVERSAIS)
+        # Adicionando componentes dos enrijecedores
+        mapdl.cmsel("ALL")
+        mapdl.cmsel("S", ENRIJECEDORES_TRANSVERSAIS_POS_APTN)
         mapdl.lsla("S")
         mapdl.lsel("R", "LOC", "Y", 0)
         mapdl.cm(LINES_BORDA_TS_INFERIOR, "LINE")
 
-        mapdl.cmsel("S", ENRIJECEDORES_TRANSVERSAIS)
+        mapdl.cmsel("ALL")
+        mapdl.cmsel("S", ENRIJECEDORES_TRANSVERSAIS_POS_APTN)
         mapdl.lsla("S")
         mapdl.lsel("R", "LOC", "Y", b)
         mapdl.cm(LINES_BORDA_TS_SUPERIOR, "LINE")
 
         mapdl.cmgrp(aname=LINES_BORDA_TS,
-            cnam1=LINES_BORDA_TS_INFERIOR,
-            cnam2=LINES_BORDA_TS_SUPERIOR)
+                    cnam1=LINES_BORDA_TS_INFERIOR,
+                    cnam2=LINES_BORDA_TS_SUPERIOR)
 
-        mapdl.cmsel("S", ENRIJECEDORES_LONGITUDINAIS)
+        mapdl.cmsel("ALL")
+        mapdl.cmsel("S", ENRIJECEDORES_LONGITUDINAIS_POS_APTN)
         mapdl.lsla("S")
         mapdl.lsel("R", "LOC", "X", 0)
         mapdl.cm(LINES_BORDA_LS_ESQUERDA, "LINE")
 
-        mapdl.cmsel("S", ENRIJECEDORES_LONGITUDINAIS)
+        mapdl.cmsel("ALL")
+        mapdl.cmsel("S", ENRIJECEDORES_LONGITUDINAIS_POS_APTN)
         mapdl.lsla("S")
         mapdl.lsel("R", "LOC", "X", a)
         mapdl.cm(LINES_BORDA_LS_DIREITA, "LINE")
 
         mapdl.cmgrp(aname=LINES_BORDA_LS,
-            cnam1=LINES_BORDA_LS_ESQUERDA,
-            cnam2=LINES_BORDA_LS_DIREITA)
+                    cnam1=LINES_BORDA_LS_ESQUERDA,
+                    cnam2=LINES_BORDA_LS_DIREITA)
 
         mapdl.cmgrp(aname=LINES_BORDA_ENRIJECEDORES,
-            cnam1=LINES_BORDA_TS,
-            cnam2=LINES_BORDA_LS)
+                    cnam1=LINES_BORDA_TS,
+                    cnam2=LINES_BORDA_LS)
 
         # Aplicar BCs de translação ao longo de z das bordas dos enrijecedores
+        mapdl.cmsel("ALL")
         mapdl.dl(LINES_BORDA_ENRIJECEDORES, "", "UZ", 0)
         mapdl.finish()
 
@@ -445,41 +506,45 @@ class StiffenedPlateAnalysisService():
         mapdl.asel("ALL")
         mapdl.mshape(0, "2D")
         mapdl.mshkey(0)
-        mapdl.cm(PLACA, "AREA")
+        mapdl.cm(PLACA_POS_APTN, "AREA")
 
     def define_plate_discretization(self, mapdl, mesh_size, stiffened_plate_analysis):
+        mapdl.cmsel("ALL")
         mapdl.type(1)
         mapdl.mat(1)
         mapdl.run("REAL")
         mapdl.esys(0)
         mapdl.secnum(1)
-        mapdl.aesize(PLACA, mesh_size)
-        mapdl.amesh(PLACA)
+        mapdl.aesize(PLACA_POS_APTN, mesh_size)
+        mapdl.amesh(PLACA_POS_APTN)
         num_elem = mapdl.get('NELEM', 'ELEM', '', 'count')
         stiffened_plate_analysis.num_elem = num_elem
         stiffened_plate_analysis.save()
 
     # TODO: Refatorar esse método para usar Selection Logic
     def define_plate_boundary_conditions(self, mapdl, a, b):
-        mapdl.cmsel("S", PLACA)
+        mapdl.cmsel("ALL")
+        mapdl.cmsel("S", PLACA_POS_APTN)
         mapdl.lsla("S")
         mapdl.ksll("S")
         mapdl.ksel("S", "LOC", "X", 0)
         mapdl.ksel("R", "LOC", "Y", 0)
         mapdl.cm(KP_INFERIOR_ESQUERDO, "KP")
         mapdl.dk(KP_INFERIOR_ESQUERDO, "UX", "UY", 0, 0)
-        
+
         # Selecionar KP Superior Esquerdo
-        mapdl.cmsel("S", PLACA)
+        mapdl.cmsel("ALL")
+        mapdl.cmsel("S", PLACA_POS_APTN)
         mapdl.lsla("S")
         mapdl.ksll("S")
         mapdl.ksel("S", "LOC", "X", 0)
         mapdl.ksel("R", "LOC", "Y", b)
         mapdl.cm(KP_SUPERIOR_ESQUERDO, "KP")
         mapdl.dk(KP_SUPERIOR_ESQUERDO, "UX", 0)
-        
+
         # Selecionar KP Inferior Direito
-        mapdl.cmsel("S", PLACA)
+        mapdl.cmsel("ALL")
+        mapdl.cmsel("S", PLACA_POS_APTN)
         mapdl.lsla("S")
         mapdl.ksll("S")
         mapdl.ksel("S", "LOC", "X", a)
@@ -489,41 +554,47 @@ class StiffenedPlateAnalysisService():
 
         # Adicionando componentes da placa
         # # Contorno da placa inteira
-        mapdl.cmsel("S", PLACA)
+        mapdl.cmsel("ALL")
+        mapdl.cmsel("S", PLACA_POS_APTN)
         mapdl.lsla("S")
         mapdl.cm(LINES_CONTORNO_PLACA, "LINE")
 
         # # Direção Longitudinal
         # ## Borda esquerda
+        mapdl.cmsel("ALL")
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "X", 0)
         mapdl.cm(LINES_CONTORNO_PLACA_ESQUERDA, "LINE")
 
         # ## Borda direita
+        mapdl.cmsel("ALL")
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "X", a)
         mapdl.cm(LINES_CONTORNO_PLACA_DIREITA, "LINE")
 
         mapdl.cmgrp(aname=LINES_CONTORNO_PLACA_TS,
-            cnam1=LINES_CONTORNO_PLACA_ESQUERDA,
-            cnam2=LINES_CONTORNO_PLACA_DIREITA)
+                    cnam1=LINES_CONTORNO_PLACA_ESQUERDA,
+                    cnam2=LINES_CONTORNO_PLACA_DIREITA)
 
         # # Direção Longitudinal
         # ## Borda inferior
+        mapdl.cmsel("ALL")
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "Y", 0)
         mapdl.cm(LINES_CONTORNO_PLACA_INFERIOR, "LINE")
 
         # ## Borda superior
+        mapdl.cmsel("ALL")
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "Y", b)
         mapdl.cm(LINES_CONTORNO_PLACA_SUPERIOR, "LINE")
 
-        # ## Bordas paralelas aos enrijecedores longitudinais   
+        # ## Bordas paralelas aos enrijecedores longitudinais
         mapdl.cmgrp(aname=LINES_CONTORNO_PLACA_LS,
-            cnam1=LINES_CONTORNO_PLACA_INFERIOR,
-            cnam2=LINES_CONTORNO_PLACA_SUPERIOR)
+                    cnam1=LINES_CONTORNO_PLACA_INFERIOR,
+                    cnam2=LINES_CONTORNO_PLACA_SUPERIOR)
 
-        #Aplicar BCs de translação ao longo de z das linhas da placa
+        # Aplicar BCs de translação ao longo de z das linhas da placa
+        mapdl.cmsel("ALL")
         mapdl.dl(LINES_CONTORNO_PLACA, "", "UZ", 0)
         mapdl.finish()
