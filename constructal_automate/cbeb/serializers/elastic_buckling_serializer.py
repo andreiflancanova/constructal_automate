@@ -5,6 +5,7 @@ from csg.models.stiffened_plate import StiffenedPlate
 from rest_framework import serializers
 from django.shortcuts import get_object_or_404
 
+
 class ElasticBucklingSerializer(serializers.ModelSerializer):
     class Meta:
         model = ElasticBuckling
