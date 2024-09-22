@@ -40,6 +40,11 @@ LINES_BORDA_TS = os.getenv('LINES_BORDA_TS')
 LINES_BORDA_ENRIJECEDORES = os.getenv('LINES_BORDA_ENRIJECEDORES')
 PENDING_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Pending')
 
+OFFSET_PERCENTUAL_BORDA_INICIAL = 0.40
+OFFSET_PERCENTUAL_BORDA_FINAL = 0.60
+OFFSET_PERCENTUAL_Z_INICIAL = 0.40
+OFFSET_PERCENTUAL_Z_FINAL = 0.60
+
 
 class StiffenedPlateAnalysisService():
 
@@ -176,17 +181,11 @@ class StiffenedPlateAnalysisService():
         mapdl.secoffset("TOP")
         mapdl.seccontrol("", "", "", "", "", "")
 
-        # # Seção dos enrijecedores transversais
+        # # Seção dos enrijecedores
         mapdl.run("sect,2,shell")
         mapdl.secdata(t_s, 1, 0, 3)
         mapdl.secoffset("MID")
         mapdl.seccontrol(0, 0, 0, 0, 1, 1, 1)
-
-        # Seção dos enrijecedores longitudinais
-        # mapdl.run("sect,3,shell")
-        # mapdl.secdata(t_s, 1, 0, 3)
-        # mapdl.secoffset("MID")
-        # mapdl.seccontrol(0, 0, 0, 0, 1, 1, 1)
 
     def define_stiffened_plate_geometry(self, mapdl, a, b, N_ts, N_ls, h_s):
         # Definir espaçamento dos enrijecedores
@@ -252,18 +251,11 @@ class StiffenedPlateAnalysisService():
     def define_stiffened_plate_discretization(self, mapdl, a, b, t_1, N_ts, N_ls, h_s, mesh_size, stiffened_plate_analysis):
         a_ts = float(round(a/(N_ts+1), 0))
         b_ls = float(round(b/(N_ls+1), 0))
-        
-        # Mergear áreas coincidentes
-        mapdl.allsel(labt="ALL", entity="AREA")
-        # mapdl.boptn(lab="KEEP", value="YES")
-        mapdl.aptn(na1="ALL")
-        # There is at least 1 small equation
 
-        OFFSET_PERCENTUAL_BORDA_INICIAL = 0.40
-        OFFSET_PERCENTUAL_BORDA_FINAL = 0.60
-        OFFSET_PERCENTUAL_Z_INICIAL = 0.40
-        OFFSET_PERCENTUAL_Z_FINAL = 0.60
-        
+        # Particionar as áreas para corrigir problemas de interface entre enrijecedores
+        mapdl.allsel(labt="ALL", entity="AREA")
+        mapdl.aptn(na1="ALL")
+
         # Criar componente da PLACA_POS_APTN
         mapdl.asel("ALL")
         mapdl.asel("S", "LOC", "X", OFFSET_PERCENTUAL_BORDA_INICIAL*float(a_ts), OFFSET_PERCENTUAL_BORDA_FINAL*float(a_ts))

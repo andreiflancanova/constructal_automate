@@ -1,5 +1,4 @@
 from django.db import models
-
 from .stiffened_plate_analysis import StiffenedPlateAnalysis
 
 

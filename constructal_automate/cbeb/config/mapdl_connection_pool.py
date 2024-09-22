@@ -59,7 +59,7 @@ class MapdlConnectionPool:
             )
         except Exception as e:
             raise RuntimeError(f"Failed to initialize MAPDL pool: {e}")
-        
+
         self.available_connections = [
             MapdlConnection(connection, idx, str(run_location), jobname)
             for idx, (connection, run_location, jobname) in enumerate(zip(self.mapdl_pool, run_locations, jobnames))
