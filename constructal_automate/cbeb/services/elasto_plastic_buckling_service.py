@@ -1,11 +1,12 @@
 from decimal import Decimal
 import os
 from cbeb.models import StiffenedPlateAnalysis
-from cbeb.config.mapdl_connection_pool import MapdlConnectionPool
 from cbeb.models.elastic_buckling import ElasticBuckling
 from csg.models import StiffenedPlate
 from cbeb.models.processing_status import ProcessingStatus
 from ansys.mapdl.core.errors import MapdlRuntimeError
+from ansys.mapdl.core import launch_mapdl
+import re
 
 LINES_CONTORNO_PLACA_TS = os.getenv('LINES_CONTORNO_PLACA_TS')
 LINES_CONTORNO_PLACA_LS = os.getenv('LINES_CONTORNO_PLACA_LS')
@@ -17,6 +18,8 @@ FAILED_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Failed')
 CANCELLED_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Cancelled')
 LOAD_MULTIPLIER = 0.7
 
+MAPDL_RUN_LOCATION = os.getenv('MAPDL_RUN_LOCATION')
+MAPDL_START_TIMEOUT = int(os.getenv('MAPDL_START_TIMEOUT', 30))
 
 class ElastoPlasticBucklingService():
     def create(self,
@@ -38,11 +41,17 @@ class ElastoPlasticBucklingService():
         csi_y = elastic_buckling.csi_y
         material = stiffened_plate_analysis.material
 
-        mapdl_connection_pool = MapdlConnectionPool()
 
-        mapdl_connection = mapdl_connection_pool.get_connection()
-
-        mapdl = mapdl_connection.connection
+        mapdl = launch_mapdl(
+            port=50052,
+            run_location=MAPDL_RUN_LOCATION,
+            nproc=4,
+            override=True,
+            loglevel="INFO",
+            start_timeout=MAPDL_START_TIMEOUT,
+            remove_temp_files=True,
+            cleanup_on_exit=True,
+        )
 
         try:
             stiffened_plate_analysis.elasto_plastic_buckling_status = IN_PROGRESS_PROCESSING_STATUS
@@ -51,7 +60,20 @@ class ElastoPlasticBucklingService():
             self.load_previous_steps_analysis_db(mapdl, analysis_log_path, analysis_dir_path, analysis_db_path)
             self.define_nonlinear_analysis_params(mapdl, w0, rst_file_path, material, t_1)
             self.apply_loads(mapdl, h_s, t_s, buckling_load_type, material, t_1, csi_y)
-            self.solve_elasto_plastic_buckling(mapdl)
+            
+            try:
+                self.solve_elasto_plastic_buckling(mapdl)
+            except:
+                mapdl = launch_mapdl(
+                    port=50053,
+                    run_location=MAPDL_RUN_LOCATION,
+                    nproc=4,
+                    override=True,
+                    loglevel="INFO",
+                    start_timeout=MAPDL_START_TIMEOUT,
+                    remove_temp_files=True,
+                    cleanup_on_exit=True,
+                )
             n_u, sigma_u = self.calc_ultimate_buckling_load_and_stress(mapdl, t_1)
             w_max = self.calc_z_deflection(mapdl, a, b)
             mapdl.finish()
@@ -63,17 +85,18 @@ class ElastoPlasticBucklingService():
             mapdl._close_apdl_log()
             stiffened_plate_analysis.elastic_buckling_status = FAILED_PROCESSING_STATUS
             stiffened_plate_analysis.save()
-        # TODO: Implementar lógica para cancelar a request
         finally:
-            mapdl_connection_pool.return_connection(mapdl_connection)
+            mapdl.exit()
         return n_u, sigma_u, w_max
 
     def load_previous_steps_analysis_db(self, mapdl, analysis_log_path, analysis_dir_path, analysis_db_path):
         mapdl.open_apdl_log(filename=analysis_log_path, mode='a')
         mapdl.cwd(analysis_dir_path)
-        mapdl.resume(fname=f'{analysis_db_path}')
+        file_name = re.sub(r'^.*/([^/]+)\.db$', r'\1', analysis_db_path)
+        mapdl.filname(fname=file_name, key=0)
+        mapdl.resume(fname=file_name, ext = 'db')
         mapdl.slashsolu()
-        mapdl.asel("ALL")
+        mapdl.allsel(labt="ALL", entity="ALL")
 
     def define_initial_deflection(self, b):
         return b/2000
@@ -86,7 +109,7 @@ class ElastoPlasticBucklingService():
 
     def define_nonlinear_analysis_params(self, mapdl, w0, rst_file_path, material, t_1):
         mapdl.prep7()
-        # mapdl.ncnv(dlim=2000000)
+        mapdl.run("/NERR,1000,99999999")
         mapdl.upgeom(factor=w0, lstep="LAST", sbstep="LAST", fname=rst_file_path.removesuffix(".rst"), ext="")
         mapdl.tb(lab="BISO", mat=material.id, ntemp=1, npts=2)
         mapdl.tbtemp(0)
@@ -94,49 +117,58 @@ class ElastoPlasticBucklingService():
         mapdl.run("/SOL")
         mapdl.run("ANTYPE,0")
         mapdl.nlgeom(key="ON")
-        # mapdl.lnsrch(key="ON")
-        # mapdl.autots(key="ON")
-        mapdl.nsubst(200, 400, 100)
-        mapdl.cnvtol(lab="F", value=0.1)
-        mapdl.cnvtol(lab="U", value=0.1)
-        # mapdl.outres("ERASE")
-        # mapdl.outres("ALL", 1)
         mapdl.pstres(1)
-        n_e = round(Decimal(LOAD_MULTIPLIER) * material.yielding_stress*t_1, 1)
+        mapdl.pred(sskey="OFF")
+        mapdl.autots(key="ON")
+        mapdl.nsubst(200, 400, 100)
+        mapdl.outres("ERASE")
+        mapdl.outres("ALL", "ALL")
+        n_e = round(material.yielding_stress*t_1, 1)
         mapdl.time(n_e)
+        mapdl.neqit(neqit=100)
 
     def apply_loads(self, mapdl, h_s, t_s, buckling_load_type, material, t_1, csi_y):
-        n_e = round(Decimal(LOAD_MULTIPLIER) * material.yielding_stress*t_1, 1)
+        weighted_n_e = round(Decimal(LOAD_MULTIPLIER) * material.yielding_stress*t_1, 1)
         if self.is_stiffened_plate(h_s, t_s):
             if self.is_biaxial_buckling(buckling_load_type):
-                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", n_e)
-                mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", round(csi_y * n_e, 1))
-                mapdl.sfl(LINES_BORDA_LS, "PRESS", n_e)
-                mapdl.sfl(LINES_BORDA_TS, "PRESS", round(csi_y * n_e, 1))
+                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", weighted_n_e)
+                mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", round(csi_y * weighted_n_e, 1))
+                mapdl.sfl(LINES_BORDA_LS, "PRESS", weighted_n_e)
+                mapdl.sfl(LINES_BORDA_TS, "PRESS", round(csi_y * weighted_n_e, 1))
             else:
-                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", n_e)
-                mapdl.sfl(LINES_BORDA_LS, "PRESS", n_e)
+                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", weighted_n_e)
+                mapdl.sfl(LINES_BORDA_LS, "PRESS", weighted_n_e)
         else:
             if self.is_biaxial_buckling(buckling_load_type):
-                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", n_e)
-                mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", round(csi_y * n_e, 1))
+                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", weighted_n_e)
+                mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", round(csi_y * weighted_n_e, 1))
             else:
-                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", n_e)
+                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", weighted_n_e)
 
     def solve_elasto_plastic_buckling(self, mapdl):
-        mapdl.solve()
+        print("Entering SOLVE step")
+        
+        try:
+            mapdl.mute = True
+            mapdl.solve()
+        except:
+            mapdl.save(slab='ALL')
+            print("An error occurred, but the analysis will try to continue")
         mapdl.finish()
-        mapdl.run("/POST1")
 
     def calc_ultimate_buckling_load_and_stress(self, mapdl, t_1):
-        elasto_plastic_buckling_data_sets = mapdl.post_processing.time_values
-        ultimate_buckling_load_position = len(elasto_plastic_buckling_data_sets) - 2
-        n_u = elasto_plastic_buckling_data_sets[ultimate_buckling_load_position]
-        sigma_u = n_u / t_1
+        print("Entering General Postproc step")
+        mapdl.run("/POST1")
+
+        print(mapdl.post_processing)
+
+        n_u = mapdl.result.time_values[len(mapdl.result.time_values)-2]
+        sigma_u = n_u / float(t_1)
         mapdl.save()
         return n_u, sigma_u
 
     def calc_z_deflection(self, mapdl, a, b):
         mapdl.run(f"NSEL,S,NODE,,NODE({float(a)*0.5},{float(b)*0.5},0)")
-        z_deflection = abs(mapdl.prnsol(item="U", comp="Z").to_list()[0][1])
+        mapdl.set(lstep=1, sbstep=len(mapdl.result.time_values)-2)
+        z_deflection = abs(mapdl.post_processing.nodal_displacement("Z")[0])
         return z_deflection

@@ -1,1 +1,0 @@
-from .mapdl_connection_pool import MapdlConnectionPool

@@ -1,0 +1,28 @@
+services:
+  db:
+    image: mariadb:10.5
+    profiles:
+      - only-db
+    volumes:
+      - constructal-automate-db-volume:/var/lib/mysql
+    env_file:
+      - ./environments/db/dev.env
+    expose:
+      - 3306
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: [ "CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized" ]
+      start_period: 1m
+      start_interval: 10s
+      interval: 1m
+      timeout: 5s
+      retries: 3
+    networks:
+      - constructal-automate-network
+volumes:
+  constructal-automate-db-volume:
+    # external: true
+networks:
+  constructal-automate-network:
+    driver: bridge
