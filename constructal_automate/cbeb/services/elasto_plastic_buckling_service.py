@@ -16,7 +16,7 @@ IN_PROGRESS_PROCESSING_STATUS = ProcessingStatus.objects.get(name='In Progress')
 COMPLETED_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Completed')
 FAILED_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Failed')
 CANCELLED_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Cancelled')
-LOAD_MULTIPLIER = 0.7
+LOAD_MULTIPLIER = 1
 
 MAPDL_RUN_LOCATION = os.getenv('MAPDL_RUN_LOCATION')
 MAPDL_START_TIMEOUT = int(os.getenv('MAPDL_START_TIMEOUT', 30))
@@ -76,6 +76,7 @@ class ElastoPlasticBucklingService():
                 )
             n_u, sigma_u = self.calc_ultimate_buckling_load_and_stress(mapdl, t_1)
             w_max = self.calc_z_deflection(mapdl, a, b)
+            von_mises_dist_img_path, w_dist_img_path = self.plot_images(mapdl, analysis_db_path, material.yielding_stress)
             mapdl.finish()
             mapdl._close_apdl_log()
             stiffened_plate_analysis.elasto_plastic_buckling_status = COMPLETED_PROCESSING_STATUS
@@ -87,7 +88,7 @@ class ElastoPlasticBucklingService():
             stiffened_plate_analysis.save()
         finally:
             mapdl.exit()
-        return n_u, sigma_u, w_max
+        return n_u, sigma_u, w_max, von_mises_dist_img_path, w_dist_img_path
 
     def load_previous_steps_analysis_db(self, mapdl, analysis_log_path, analysis_dir_path, analysis_db_path):
         mapdl.open_apdl_log(filename=analysis_log_path, mode='a')
@@ -160,8 +161,6 @@ class ElastoPlasticBucklingService():
         print("Entering General Postproc step")
         mapdl.run("/POST1")
 
-        print(mapdl.post_processing)
-
         n_u = mapdl.result.time_values[len(mapdl.result.time_values)-2]
         sigma_u = n_u / float(t_1)
         mapdl.save()
@@ -169,6 +168,104 @@ class ElastoPlasticBucklingService():
 
     def calc_z_deflection(self, mapdl, a, b):
         mapdl.run(f"NSEL,S,NODE,,NODE({float(a)*0.5},{float(b)*0.5},0)")
-        mapdl.set(lstep=1, sbstep=len(mapdl.result.time_values)-2)
+        mapdl.set(lstep=1, sbstep=len(mapdl.result.time_values)-1)
         z_deflection = abs(mapdl.post_processing.nodal_displacement("Z")[0])
         return z_deflection
+
+    def plot_images(self, mapdl, analysis_db_path, material_yielding_stress):
+        # mapdl.allsel(labt="ALL", entity="ALL")
+        VON_MISES_IMG_SUFFIX = '_von_mises_dist.png'
+        W_IMG_SUFFIX = '_w_dist.png'
+
+        von_mises_dist_img_path = analysis_db_path.replace('.db', VON_MISES_IMG_SUFFIX)
+        w_dist_img_path = analysis_db_path.replace('.db', W_IMG_SUFFIX)
+
+        mapdl.result.plot_principal_nodal_stress(
+            len(mapdl.result.time_values)-2,
+            "SEQV",
+            lighting=False,
+            cpos="iso",
+            background="white",
+            text_color="black",
+            add_text=False,
+            show_edges=True,          
+            edge_color="black",       
+            cmap="jet",              
+            rng=[0, material_yielding_stress],
+            line_width=1.0,           
+            off_screen=True,
+            # screenshot=von_mises_dist_img_path,
+            show_scalar_bar=True,
+            # show_displacement=True,
+            # displacement_factor=2,
+            scalar_bar_args={
+                "title": "Tensões (MPa)",
+                "vertical": False,
+                "fmt":"%8.2f",
+                "width": 0.4,
+                "position_x": 0.55,
+                "position_y": 0.15,
+                "title_font_size": 20,
+                "label_font_size": 16,
+            }
+        )
+
+        mapdl.result.plot_principal_nodal_stress(
+            len(mapdl.result.time_values)-2,
+            "SEQV",
+            lighting=False,
+            cpos="iso",
+            background="white",
+            text_color="black",
+            add_text=False,
+            show_edges=True,          
+            edge_color="black",       
+            cmap="jet",              
+            rng=[0, material_yielding_stress],
+            line_width=1.0,           
+            off_screen=True,
+            screenshot=von_mises_dist_img_path,
+            show_scalar_bar=True,
+            # show_displacement=True,
+            # displacement_factor=2,
+            scalar_bar_args={
+                "title": "Tensões (MPa)",
+                "vertical": False,
+                "fmt":"%8.2f",
+                "width": 0.4,
+                "position_x": 0.55,
+                "position_y": 0.15,
+                "title_font_size": 20,
+                "label_font_size": 16,
+            }
+        )
+
+        mapdl.result.plot_nodal_displacement(
+            len(mapdl.result.time_values)-2,
+            "UZ",
+            lighting=False,
+            cpos="iso",
+            background="white",
+            text_color="black",
+            add_text=False,
+            show_edges=True,
+            edge_color="black",
+            cmap="jet",
+            line_width=1.0,
+            off_screen=True,
+            screenshot=w_dist_img_path,
+            show_scalar_bar=True,
+            scalar_bar_args={
+                "title": "Deslocamento em Z (mm)",
+                "vertical": False,
+                "fmt":"%8.2f",
+                "width": 0.4,
+                "position_x": 0.55,
+                "position_y": 0.15,
+                "title_font_size": 20,
+                "label_font_size": 16,
+            }
+        )
+        
+
+        return von_mises_dist_img_path, w_dist_img_path
