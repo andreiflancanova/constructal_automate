@@ -2,8 +2,9 @@ import os
 from cbeb.models import StiffenedPlateAnalysis
 from cbeb.models.processing_status import ProcessingStatus
 from csg.models import StiffenedPlate
-from cbeb.config.mapdl_connection_pool import MapdlConnectionPool
 from ansys.mapdl.core.errors import MapdlRuntimeError
+from ansys.mapdl.core import launch_mapdl
+import re
 
 
 LINES_CONTORNO_PLACA_TS = os.getenv('LINES_CONTORNO_PLACA_TS')
@@ -15,9 +16,10 @@ COMPLETED_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Completed')
 FAILED_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Failed')
 CANCELLED_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Cancelled')
 
+MAPDL_RUN_LOCATION = os.getenv('MAPDL_RUN_LOCATION')
+MAPDL_START_TIMEOUT = int(os.getenv('MAPDL_START_TIMEOUT', 30))
 
 class ElasticBucklingService():
-    # TODO: Modificar para receber um biaxial_buckling
 
     def create(self,
                stiffened_plate_analysis: StiffenedPlateAnalysis,
@@ -36,11 +38,16 @@ class ElasticBucklingService():
         t_s = stiffened_plate.t_s
         h_s = stiffened_plate.h_s
 
-        mapdl_connection_pool = MapdlConnectionPool()
 
-        mapdl_connection = mapdl_connection_pool.get_connection()
-
-        mapdl = mapdl_connection.connection
+        mapdl = launch_mapdl(
+            run_location=MAPDL_RUN_LOCATION,
+            nproc=4,
+            override=True,
+            loglevel="INFO",
+            start_timeout=MAPDL_START_TIMEOUT,
+            remove_temp_files=True,
+            cleanup_on_exit=True,
+        )
 
         try:
             stiffened_plate_analysis.elastic_buckling_status = IN_PROGRESS_PROCESSING_STATUS
@@ -62,15 +69,17 @@ class ElasticBucklingService():
             stiffened_plate_analysis.save()
         # TODO: Implementar lógica para cancelar a request
         finally:
-            mapdl_connection_pool.return_connection(mapdl_connection)
+            mapdl.exit()
         return n_cr, sigma_cr, w_center
 
     def load_previous_steps_analysis_db(self, mapdl, analysis_log_path, analysis_dir_path, analysis_db_path):
         mapdl.open_apdl_log(filename=analysis_log_path, mode='a')
         mapdl.cwd(analysis_dir_path)
-        mapdl.resume(fname=f'{analysis_db_path}')
+        file_name = re.sub(r'^.*/([^/]+)\.db$', r'\1', analysis_db_path)
+        mapdl.filname(fname=file_name, key=0)
+        mapdl.resume(fname=file_name, ext = 'db')
         mapdl.slashsolu()
-        mapdl.asel("ALL")
+        mapdl.allsel(labt="ALL", entity="ALL")
 
     def apply_loads(self, mapdl, h_s, t_s, buckling_load_type, n_x, csi_y):
         if self.is_stiffened_plate(h_s, t_s):
@@ -90,7 +99,7 @@ class ElasticBucklingService():
                 mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", n_x)
 
     def solve_elastic_buckling(self, mapdl):
-        mapdl.asel("ALL")
+        mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.solve()
         mapdl.finish()
         mapdl.run("/SOLU")
@@ -99,18 +108,20 @@ class ElasticBucklingService():
         mapdl.mxpand(1, 0, 0, 0, 0.001)
         mapdl.solve()
         mapdl.finish()
-        mapdl.save()
+        mapdl.save(slab='ALL')
         mapdl.run("/POST1")
 
     def calc_buckling_load_and_stress(self, mapdl, t_1):
         n_cr = mapdl.post_processing.time
         sigma_cr = n_cr / float(t_1)
-        mapdl.save()
+        mapdl.save(slab='ALL')
         return n_cr, sigma_cr
 
     def calc_z_deflection(self, mapdl, a, b):
+        mapdl.mute = False
         mapdl.run(f"NSEL,S,NODE,,NODE({float(a)*0.5},{float(b)*0.5},0)")
         z_deflection = abs(mapdl.prnsol(item="U", comp="Z").to_list()[0][1])
+        mapdl.mute = True
         return z_deflection
 
     def is_biaxial_buckling(self, buckling_load_type):

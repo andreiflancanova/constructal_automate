@@ -6,4 +6,4 @@ django-filter
 mysqlclient
 python-dotenv
 matplotlib
-ansys-mapdl-core==0.68.0
+ansys-mapdl-core==0.68.4

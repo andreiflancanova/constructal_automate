@@ -20,7 +20,7 @@ class ElastoPlasticBucklingSerializer(serializers.ModelSerializer):
 
         service = ElastoPlasticBucklingService()
 
-        n_u, sigma_u, w_max = service.create(
+        n_u, sigma_u, w_max, von_mises_dist_img_path, w_dist_img_path = service.create(
             associated_stiffened_plate,
             associated_stiffened_plate_analysis,
             associated_elastic_buckling
@@ -31,7 +31,9 @@ class ElastoPlasticBucklingSerializer(serializers.ModelSerializer):
             stiffened_plate_analysis=associated_stiffened_plate_analysis,
             n_u=n_u,
             sigma_u=sigma_u,
-            w_max=w_max
+            w_max=w_max,
+            von_mises_dist_img_path=von_mises_dist_img_path,
+            w_dist_img_path=w_dist_img_path
         )
 
         return elasto_plastic_buckling_instance
