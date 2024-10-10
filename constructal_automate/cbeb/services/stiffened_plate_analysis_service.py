@@ -98,7 +98,6 @@ class StiffenedPlateAnalysisService():
                 self.define_stiffened_plate_components_and_apply_boundary_conditions(mapdl, a, b, t_1)
             else:
                 self.define_plate_element_type_section_and_material(mapdl, E, poisson_ratio, t_1)
-                self.define_plate_element_type_section_and_material(mapdl, E, poisson_ratio, t_1)
                 self.define_plate_geometry(mapdl, a, b)
                 self.define_plate_discretization(mapdl, mesh_size, stiffened_plate_analysis)
                 self.define_plate_boundary_conditions(mapdl, a, b)
@@ -324,7 +323,7 @@ class StiffenedPlateAnalysisService():
         # Entrar no /SOLU
         mapdl.slashsolu()
         mapdl.run("ANTYPE,0")
-        mapdl.pstres(0)
+        mapdl.pstres(1)
 
         # Boundary Conditions
         # # Selecionar KP Inferior Esquerdo
@@ -482,7 +481,7 @@ class StiffenedPlateAnalysisService():
         # # Seção da placa
         mapdl.run("sect,1,shell")
         mapdl.secdata(t_1, 1, 0, 3)
-        mapdl.secoffset("TOP")
+        mapdl.secoffset("MID")
         mapdl.seccontrol("", "", "", "", "", "")
 
     def define_plate_geometry(self, mapdl, a, b):
@@ -505,8 +504,10 @@ class StiffenedPlateAnalysisService():
         stiffened_plate_analysis.num_elem = num_elem
         stiffened_plate_analysis.save()
 
-    # TODO: Refatorar esse método para usar Selection Logic
     def define_plate_boundary_conditions(self, mapdl, a, b):
+        mapdl.slashsolu()
+        mapdl.pstres(1)
+
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.cmsel("S", PLACA_POS_APTN)
         mapdl.lsla("S")
@@ -514,7 +515,9 @@ class StiffenedPlateAnalysisService():
         mapdl.ksel("S", "LOC", "X", 0)
         mapdl.ksel("R", "LOC", "Y", 0)
         mapdl.cm(KP_INFERIOR_ESQUERDO, "KP")
-        mapdl.dk(KP_INFERIOR_ESQUERDO, "UX", "UY", 0, 0)
+        mapdl.allsel(labt="ALL", entity="ALL")
+        mapdl.dk(KP_INFERIOR_ESQUERDO, "UX", 0)
+        mapdl.dk(KP_INFERIOR_ESQUERDO, "UY", 0)
 
         # Selecionar KP Superior Esquerdo
         mapdl.allsel(labt="ALL", entity="ALL")
@@ -524,6 +527,7 @@ class StiffenedPlateAnalysisService():
         mapdl.ksel("S", "LOC", "X", 0)
         mapdl.ksel("R", "LOC", "Y", b)
         mapdl.cm(KP_SUPERIOR_ESQUERDO, "KP")
+        mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dk(KP_SUPERIOR_ESQUERDO, "UX", 0)
 
         # Selecionar KP Inferior Direito
@@ -534,6 +538,7 @@ class StiffenedPlateAnalysisService():
         mapdl.ksel("S", "LOC", "X", a)
         mapdl.ksel("R", "LOC", "Y", 0)
         mapdl.cm(KP_INFERIOR_DIREITO, "KP")
+        mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dk(KP_INFERIOR_DIREITO, "UY", 0)
 
         # Adicionando componentes da placa
@@ -579,6 +584,6 @@ class StiffenedPlateAnalysisService():
                     cnam2=LINES_CONTORNO_PLACA_SUPERIOR)
 
         # Aplicar BCs de translação ao longo de z das linhas da placa
-        mapdl.cmsel("ALL")
+        mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dl(LINES_CONTORNO_PLACA, "", "UZ", 0)
         mapdl.finish()

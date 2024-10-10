@@ -26,7 +26,6 @@ class ElastoPlasticBucklingSerializer(serializers.ModelSerializer):
             associated_elastic_buckling
         )
 
-        # TODO: Implementar lógica para gerar as imagens
         elasto_plastic_buckling_instance = ElastoPlasticBuckling.objects.create(
             stiffened_plate_analysis=associated_stiffened_plate_analysis,
             n_u=n_u,

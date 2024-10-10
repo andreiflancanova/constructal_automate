@@ -51,7 +51,7 @@ class ElasticBucklingService():
 
         try:
             stiffened_plate_analysis.elastic_buckling_status = IN_PROGRESS_PROCESSING_STATUS
-            stiffened_plate_analysis.save()
+            # stiffened_plate_analysis.save()
             self.load_previous_steps_analysis_db(mapdl, analysis_log_path, analysis_dir_path, analysis_db_path)
             self.apply_loads(mapdl, h_s, t_s, buckling_load_type, n_x, csi_y)
             self.solve_elastic_buckling(mapdl)
@@ -67,7 +67,6 @@ class ElasticBucklingService():
             mapdl._close_apdl_log()
             stiffened_plate_analysis.elastic_buckling_status = FAILED_PROCESSING_STATUS
             stiffened_plate_analysis.save()
-        # TODO: Implementar lógica para cancelar a request
         finally:
             mapdl.exit()
         return n_cr, sigma_cr, w_center

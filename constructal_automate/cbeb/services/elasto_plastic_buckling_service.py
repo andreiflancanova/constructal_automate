@@ -112,7 +112,7 @@ class ElastoPlasticBucklingService():
         mapdl.prep7()
         mapdl.run("/NERR,1000,99999999")
         mapdl.upgeom(factor=w0, lstep="LAST", sbstep="LAST", fname=rst_file_path.removesuffix(".rst"), ext="")
-        mapdl.tb(lab="BISO", mat=material.id, ntemp=1, npts=2)
+        mapdl.tb(lab="BISO", mat=1, ntemp=1, npts=2)
         mapdl.tbtemp(0)
         mapdl.tbdata("", material.yielding_stress, material.tang_modulus, "")
         mapdl.run("/SOL")
