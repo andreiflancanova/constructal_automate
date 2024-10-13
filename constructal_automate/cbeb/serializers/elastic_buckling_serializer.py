@@ -16,22 +16,18 @@ class ElasticBucklingSerializer(serializers.ModelSerializer):
         associated_stiffened_plate_analysis = get_object_or_404(StiffenedPlateAnalysis, id=stiffened_plate_analysis_id)
         associated_stiffened_plate = get_object_or_404(StiffenedPlate, id=associated_stiffened_plate_analysis.stiffened_plate.id)
 
-        n_x = validated_data['n_x']
-        csi_y = validated_data['csi_y']
-
         service = ElasticBucklingService()
 
-        n_cr, sigma_cr, w_center = service.create(
+        n_cr, sigma_cr_ts, sigma_cr_ls, w_center = service.create(
             associated_stiffened_plate_analysis,
-            associated_stiffened_plate,
-            n_x,
-            csi_y
+            associated_stiffened_plate
         )
 
         elastic_buckling_instance = ElasticBuckling.objects.create(
             stiffened_plate_analysis=associated_stiffened_plate_analysis,
             n_cr=n_cr,
-            sigma_cr=sigma_cr,
+            sigma_cr_ts=sigma_cr_ts,
+            sigma_cr_ls=sigma_cr_ls,
             w_center=w_center,
             **validated_data
         )

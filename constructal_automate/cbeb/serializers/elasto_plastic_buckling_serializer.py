@@ -16,20 +16,21 @@ class ElastoPlasticBucklingSerializer(serializers.ModelSerializer):
         stiffened_plate_analysis_id = validated_data.pop('stiffened_plate_analysis').id
         associated_stiffened_plate_analysis = get_object_or_404(StiffenedPlateAnalysis, id=stiffened_plate_analysis_id)
         associated_stiffened_plate = get_object_or_404(StiffenedPlate, id=associated_stiffened_plate_analysis.stiffened_plate.id)
-        associated_elastic_buckling = get_object_or_404(ElasticBuckling, stiffened_plate_analysis_id=associated_stiffened_plate_analysis.id)
 
         service = ElastoPlasticBucklingService()
 
-        n_u, sigma_u, w_max, von_mises_dist_img_path, w_dist_img_path = service.create(
+        p_u_ts, p_u_ls, n_u, sigma_u_ts, sigma_u_ls, w_max, von_mises_dist_img_path, w_dist_img_path = service.create(
             associated_stiffened_plate,
             associated_stiffened_plate_analysis,
-            associated_elastic_buckling
         )
 
         elasto_plastic_buckling_instance = ElastoPlasticBuckling.objects.create(
             stiffened_plate_analysis=associated_stiffened_plate_analysis,
+            p_u_ts=p_u_ts,
+            p_u_ls=p_u_ls,
             n_u=n_u,
-            sigma_u=sigma_u,
+            sigma_u_ts=sigma_u_ts,
+            sigma_u_ls=sigma_u_ls,
             w_max=w_max,
             von_mises_dist_img_path=von_mises_dist_img_path,
             w_dist_img_path=w_dist_img_path

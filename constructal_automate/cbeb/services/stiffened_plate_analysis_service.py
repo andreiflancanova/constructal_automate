@@ -88,7 +88,6 @@ class StiffenedPlateAnalysisService():
         )
 
         try:
-            mapdl.mute = True
             self.create_mapdl_initial_files(mapdl, analysis_name, analysis_cwd_path, analysis_log_path, stiffened_plate_analysis)
 
             if self.is_stiffened_plate(h_s, t_s):
@@ -256,7 +255,8 @@ class StiffenedPlateAnalysisService():
         mapdl.aptn(na1="ALL")
 
         # Criar componente da PLACA_POS_APTN
-        mapdl.asel("ALL")
+        # mapdl.asel("ALL")
+        mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.asel("S", "LOC", "X", round(OFFSET_PERCENTUAL_BORDA_INICIAL*float(a_ts), 1), round(OFFSET_PERCENTUAL_BORDA_FINAL*float(a_ts)), 1)
         for i in range(N_ts):
             mapdl.asel("A", "LOC", "X", round(((i+1)+OFFSET_PERCENTUAL_BORDA_INICIAL)*float(a_ts),1), round(((i+1)+OFFSET_PERCENTUAL_BORDA_FINAL)*float(a_ts)),1)
@@ -264,7 +264,8 @@ class StiffenedPlateAnalysisService():
         mapdl.cm(PLACA_POS_APTN, "AREA")
 
         # Criar componente da ENRIJECEDORES_LONGITUDINAIS_POS_APTN
-        mapdl.asel("ALL")
+        # mapdl.asel("ALL")
+        mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.asel("S", "LOC", "X", round(OFFSET_PERCENTUAL_BORDA_INICIAL*float(a_ts), 1), round(OFFSET_PERCENTUAL_BORDA_FINAL*float(a_ts)), 1)
         for i in range(N_ts):
             mapdl.asel("A", "LOC", "X", round(((i+1)+OFFSET_PERCENTUAL_BORDA_INICIAL)*float(a_ts), 1), round(((i+1)+OFFSET_PERCENTUAL_BORDA_FINAL)*float(a_ts)), 1)
@@ -272,7 +273,8 @@ class StiffenedPlateAnalysisService():
         mapdl.cm(ENRIJECEDORES_LONGITUDINAIS_POS_APTN, "AREA")
 
         # Criar componente da ENRIJECEDORES_TRANSVERSAIS_POS_APTN
-        mapdl.asel("ALL")
+        # mapdl.asel("ALL")
+        mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.asel("S", "LOC", "Y", round(OFFSET_PERCENTUAL_BORDA_INICIAL*float(b_ls), 1), round(OFFSET_PERCENTUAL_BORDA_FINAL*float(b_ls), 1))
         for i in range(N_ls):
             mapdl.asel("A", "LOC", "Y", round(((i+1)+OFFSET_PERCENTUAL_BORDA_INICIAL)*float(b_ls), 1), round(((i+1)+0.52)*float(b_ls), 1))
@@ -334,17 +336,18 @@ class StiffenedPlateAnalysisService():
         mapdl.ksel("S", "LOC", "X", 0)
         mapdl.ksel("R", "LOC", "Y", 0)
         mapdl.cm(KP_INFERIOR_ESQUERDO, "KP")
-        mapdl.dk(KP_INFERIOR_ESQUERDO, "UX", "UY", 0, 0)
+        mapdl.dk(KP_INFERIOR_ESQUERDO, "UX", 0)
+        mapdl.dk(KP_INFERIOR_ESQUERDO, "UY", 0)
 
         # Selecionar KP Superior Esquerdo
-        mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.cmsel("S", PLACA_POS_APTN)
-        mapdl.lsla("S")
-        mapdl.ksll("S")
-        mapdl.ksel("S", "LOC", "X", 0)
-        mapdl.ksel("R", "LOC", "Y", b)
-        mapdl.cm(KP_SUPERIOR_ESQUERDO, "KP")
-        mapdl.dk(KP_SUPERIOR_ESQUERDO, "UX", 0)
+        # mapdl.allsel(labt="ALL", entity="ALL")
+        # mapdl.cmsel("S", PLACA_POS_APTN)
+        # mapdl.lsla("S")
+        # mapdl.ksll("S")
+        # mapdl.ksel("S", "LOC", "X", 0)
+        # mapdl.ksel("R", "LOC", "Y", b)
+        # mapdl.cm(KP_SUPERIOR_ESQUERDO, "KP")
+        # mapdl.dk(KP_SUPERIOR_ESQUERDO, "UX", 0)
 
         # Selecionar KP Inferior Direito
         mapdl.allsel(labt="ALL", entity="ALL")
@@ -406,6 +409,7 @@ class StiffenedPlateAnalysisService():
         # Aplicar BCs de translação ao longo de z das linhas da placa
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dl(LINES_CONTORNO_PLACA, "", "UZ", 0)
+        # mapdl.dl(LINES_CONTORNO_PLACA, "", "ROTZ", 0)
 
         # Adicionando componentes dos enrijecedores
         mapdl.allsel(labt="ALL", entity="ALL")
@@ -447,6 +451,7 @@ class StiffenedPlateAnalysisService():
         # Aplicar BCs de translação ao longo de z das bordas dos enrijecedores
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dl(LINES_BORDA_ENRIJECEDORES, "", "UZ", 0)
+        # mapdl.dl(LINES_BORDA_ENRIJECEDORES, "", "ROTZ", 0)
         mapdl.finish()
 
     def is_stiffened_plate(self, h_s, t_s):
@@ -586,4 +591,5 @@ class StiffenedPlateAnalysisService():
         # Aplicar BCs de translação ao longo de z das linhas da placa
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dl(LINES_CONTORNO_PLACA, "", "UZ", 0)
+        # mapdl.dl(LINES_CONTORNO_PLACA, "", "ROTZ", 0)
         mapdl.finish()

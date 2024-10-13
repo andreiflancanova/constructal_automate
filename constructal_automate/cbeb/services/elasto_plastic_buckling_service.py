@@ -24,8 +24,7 @@ MAPDL_START_TIMEOUT = int(os.getenv('MAPDL_START_TIMEOUT', 30))
 class ElastoPlasticBucklingService():
     def create(self,
                stiffened_plate: StiffenedPlate,
-               stiffened_plate_analysis: StiffenedPlateAnalysis,
-               elastic_buckling: ElasticBuckling
+               stiffened_plate_analysis: StiffenedPlateAnalysis
                ):
 
         analysis_dir_path = stiffened_plate_analysis.analysis_dir_path
@@ -38,7 +37,9 @@ class ElastoPlasticBucklingService():
         t_1 = stiffened_plate.t_1
         h_s = stiffened_plate.h_s
         t_s = stiffened_plate.t_s
-        csi_y = elastic_buckling.csi_y
+        t_eq_ts = stiffened_plate.t_eq_ts
+        t_eq_ls = stiffened_plate.t_eq_ls
+
         material = stiffened_plate_analysis.material
 
 
@@ -59,7 +60,7 @@ class ElastoPlasticBucklingService():
             w0 = self.define_initial_deflection(b)
             self.load_previous_steps_analysis_db(mapdl, analysis_log_path, analysis_dir_path, analysis_db_path)
             self.define_nonlinear_analysis_params(mapdl, w0, rst_file_path, material, t_1)
-            self.apply_loads(mapdl, h_s, t_s, buckling_load_type, material, t_1, csi_y)
+            p_u_ts, p_u_ls = self.apply_loads(mapdl, h_s, t_s, buckling_load_type, material, t_eq_ts, t_eq_ls)
             
             try:
                 self.solve_elasto_plastic_buckling(mapdl)
@@ -74,7 +75,7 @@ class ElastoPlasticBucklingService():
                     remove_temp_files=True,
                     cleanup_on_exit=True,
                 )
-            n_u, sigma_u = self.calc_ultimate_buckling_load_and_stress(mapdl, t_1)
+            n_u, sigma_u_ts, sigma_u_ls = self.calc_ultimate_buckling_load_and_stress(mapdl, buckling_load_type, t_eq_ts, t_eq_ls)
             w_max = self.calc_z_deflection(mapdl, a, b)
             von_mises_dist_img_path, w_dist_img_path = self.plot_images(mapdl, analysis_db_path, material.yielding_stress)
             mapdl.finish()
@@ -88,7 +89,7 @@ class ElastoPlasticBucklingService():
             stiffened_plate_analysis.save()
         finally:
             mapdl.exit()
-        return n_u, sigma_u, w_max, von_mises_dist_img_path, w_dist_img_path
+        return p_u_ts, p_u_ls, n_u, sigma_u_ts, sigma_u_ls, w_max, von_mises_dist_img_path, w_dist_img_path
 
     def load_previous_steps_analysis_db(self, mapdl, analysis_log_path, analysis_dir_path, analysis_db_path):
         mapdl.open_apdl_log(filename=analysis_log_path, mode='a')
@@ -119,52 +120,60 @@ class ElastoPlasticBucklingService():
         mapdl.run("ANTYPE,0")
         mapdl.nlgeom(key="ON")
         mapdl.pstres(1)
-        mapdl.pred(sskey="OFF")
-        mapdl.autots(key="ON")
+        # mapdl.pred(sskey="OFF")
+        # mapdl.autots(key="ON")
         mapdl.nsubst(200, 400, 100)
+        # mapdl.nsubst(1000, 500, 1)
         mapdl.outres("ERASE")
         mapdl.outres("ALL", "ALL")
         n_e = round(material.yielding_stress*t_1, 1)
         mapdl.time(n_e)
         mapdl.neqit(neqit=100)
 
-    def apply_loads(self, mapdl, h_s, t_s, buckling_load_type, material, t_1, csi_y):
-        weighted_n_e = round(Decimal(LOAD_MULTIPLIER) * material.yielding_stress*t_1, 1)
+    def apply_loads(self, mapdl, h_s, t_s, buckling_load_type, material, t_eq_ts, t_eq_ls):
+        p_u_ts = round(material.yielding_stress*t_eq_ts, 2)
+        p_u_ls = round(material.yielding_stress*t_eq_ls, 2)
         if self.is_stiffened_plate(h_s, t_s):
             if self.is_biaxial_buckling(buckling_load_type):
-                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", weighted_n_e)
-                mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", round(csi_y * weighted_n_e, 1))
-                mapdl.sfl(LINES_BORDA_LS, "PRESS", weighted_n_e)
-                mapdl.sfl(LINES_BORDA_TS, "PRESS", round(csi_y * weighted_n_e, 1))
+                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u_ts)
+                mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", p_u_ls)
+                mapdl.sfl(LINES_BORDA_LS, "PRESS", p_u_ts)
+                mapdl.sfl(LINES_BORDA_TS, "PRESS", p_u_ls)
             else:
-                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", weighted_n_e)
-                mapdl.sfl(LINES_BORDA_LS, "PRESS", weighted_n_e)
+                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u_ts)
+                mapdl.sfl(LINES_BORDA_LS, "PRESS", p_u_ts)
         else:
             if self.is_biaxial_buckling(buckling_load_type):
-                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", weighted_n_e)
-                mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", round(csi_y * weighted_n_e, 1))
+                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u_ts)
+                mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", p_u_ls)
             else:
-                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", weighted_n_e)
+                mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u_ts)
+        return p_u_ts, p_u_ls
 
     def solve_elasto_plastic_buckling(self, mapdl):
         print("Entering SOLVE step")
         
         try:
-            mapdl.mute = True
             mapdl.solve()
         except:
             mapdl.save(slab='ALL')
             print("An error occurred, but the analysis will try to continue")
         mapdl.finish()
 
-    def calc_ultimate_buckling_load_and_stress(self, mapdl, t_1):
+    def calc_ultimate_buckling_load_and_stress(self, mapdl, buckling_load_type, t_eq_ts, t_eq_ls):
         print("Entering General Postproc step")
         mapdl.run("/POST1")
 
         n_u = mapdl.result.time_values[len(mapdl.result.time_values)-2]
-        sigma_u = n_u / float(t_1)
+        
+        if self.is_biaxial_buckling(buckling_load_type):
+            sigma_u_ts = n_u/float(t_eq_ts)
+            sigma_u_ls = n_u/float(t_eq_ls)
+        else:
+            sigma_u_ts = n_u/float(t_eq_ts)
+            sigma_u_ls = 0
         mapdl.save()
-        return n_u, sigma_u
+        return n_u, sigma_u_ts, sigma_u_ls
 
     def calc_z_deflection(self, mapdl, a, b):
         mapdl.run(f"NSEL,S,NODE,,NODE({float(a)*0.5},{float(b)*0.5},0)")
