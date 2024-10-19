@@ -50,13 +50,13 @@ class StiffenedPlateService():
             area_ts = round(float(b)*t_1 + float(N_ls*h_s*t_s), 2)
             area_ls = round(float(a)*t_1 + float(N_ts*h_s*t_s), 2)
         else:
-            area_ts = round(float(b)*t_1, 2)
-            area_ls = round(float(a)*t_1, 2)
+            area_ts = round(float(b)*float(t_1), 2)
+            area_ls = round(float(a)*float(t_1), 2)
         return area_ts, area_ls
     
     def calc_section_equivalent_thickness_in_both_directions(self, length_ts, length_ls, area_ts, area_ls):
-        t_eq_ts = area_ts/length_ts
-        t_eq_ls = area_ls/length_ls
+        t_eq_ts = area_ts/float(length_ts)
+        t_eq_ls = area_ls/float(length_ls)
         return t_eq_ts, t_eq_ls
 
 
