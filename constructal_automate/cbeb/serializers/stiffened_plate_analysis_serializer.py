@@ -6,15 +6,15 @@ from cbeb.strategies.transversally_stiffened_plate_strategy import Transversally
 from csg.models.stiffened_plate import StiffenedPlate
 from rest_framework import serializers
 from django.shortcuts import get_object_or_404
-from cbeb.models import StiffenedPlateAnalysisSerializer
-from cbeb.services import StiffenedPlateAnalysisSerializerService
+from cbeb.models import StiffenedPlateAnalysis
+from cbeb.services import StiffenedPlateAnalysisService
 import logging
 
 log = logging.getLogger(__name__)
 
-class StiffenedPlateAnalysisSerializerSerializer(serializers.ModelSerializer):
+class StiffenedPlateAnalysisSerializer(serializers.ModelSerializer):
     class Meta:
-        model = StiffenedPlateAnalysisSerializer
+        model = StiffenedPlateAnalysis
         fields = '__all__'
 
     def is_stiffened_plate(self, h_s, t_s):
@@ -41,14 +41,14 @@ class StiffenedPlateAnalysisSerializerSerializer(serializers.ModelSerializer):
             log.info('Entering UnstiffenedPlateStrategy in StiffenedPlateAnalysisSerializer...')
             return UnstiffenedPlateStrategy()
 
-    def create(self, validated_data: StiffenedPlateAnalysisSerializer):
+    def create(self, validated_data: StiffenedPlateAnalysis):
         stiffened_plate_id = validated_data.pop('stiffened_plate').id
         material_id = validated_data.pop('material').id
         associated_stiffened_plate = get_object_or_404(StiffenedPlate, id=stiffened_plate_id)
         associated_material = get_object_or_404(Material, id=material_id)
 
         # Criar instância do StiffenedPlateAnalysisSerializer
-        stiffened_plate_analysis_instance = StiffenedPlateAnalysisSerializer.objects.create(
+        stiffened_plate_analysis_instance = StiffenedPlateAnalysis.objects.create(
             stiffened_plate=associated_stiffened_plate,
             material=associated_material,
             **validated_data
@@ -57,7 +57,7 @@ class StiffenedPlateAnalysisSerializerSerializer(serializers.ModelSerializer):
         strategy = self.define_plate_strategy(associated_stiffened_plate)
 
         # Executar o serviço
-        service = StiffenedPlateAnalysisSerializerService(strategy)
+        service = StiffenedPlateAnalysisService(strategy)
         service.create(
             stiffened_plate_analysis_instance,
             associated_stiffened_plate,
