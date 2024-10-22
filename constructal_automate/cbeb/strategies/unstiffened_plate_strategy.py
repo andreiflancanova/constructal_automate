@@ -50,17 +50,6 @@ class UnstiffenedPlateStrategy(PlateStrategy):
 
     def define_element_type_section_and_material(self, mapdl, E, poisson_ratio, t_1, t_s):
         mapdl.prep7()
-        mapdl._run("/NOPR")
-        mapdl.keyw("PR_SET", 1)
-        mapdl.keyw("PR_STRUC", 1)
-        mapdl.keyw("PR_THERM", 0)
-        mapdl.keyw("PR_FLUID", 0)
-        mapdl.keyw("PR_ELMAG", 0)
-        mapdl.keyw("MAGNOD", 0)
-        mapdl.keyw("MAGEDG", 0)
-        mapdl.keyw("MAGHFE", 0)
-        mapdl.keyw("MAGELC", 0)
-        mapdl.keyw("PR_MULTI", 0)
         mapdl.run("/GO")
 
         # Parâmetros de discretização
@@ -87,7 +76,7 @@ class UnstiffenedPlateStrategy(PlateStrategy):
         mapdl.mshkey(0)
         mapdl.cm(PLACA_POS_APTN, "AREA")
 
-    def define_discretization(self, mapdl, a, b, t_1, N_ts, N_ls, h_s, mesh_size, stiffened_plate_analysis):
+    def define_discretization(self, mapdl, mesh_size, stiffened_plate_analysis):
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.type(1)
         mapdl.mat(1)

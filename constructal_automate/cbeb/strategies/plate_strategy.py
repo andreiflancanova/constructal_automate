@@ -7,15 +7,11 @@ class PlateStrategy(ABC):
         pass
 
     @abstractmethod
-    def define_geometry(self, mapdl, a, b, N_ts, N_ls, h_s):
+    def define_geometry(self, mapdl, a, b, t_1, N_ts, N_ls, h_s):
         pass
 
     @abstractmethod
-    def define_discretization(self, mapdl, a, b, t_1, N_ts, N_ls, h_s, mesh_size, stiffened_plate_analysis):
-        pass
-
-    @abstractmethod
-    def define_discretization(self, mapdl, a, b, t_1, N_ts, N_ls, h_s, mesh_size, stiffened_plate_analysis):
+    def define_discretization(self, mapdl, mesh_size, stiffened_plate_analysis):
         pass
 
     @abstractmethod
@@ -27,6 +23,5 @@ class PlateStrategy(ABC):
         pass
 
     @abstractmethod
-    # def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_eq_ts, t_eq_ls):
-    def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_1):
+    def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_eq_ts, t_eq_ls):
         pass
