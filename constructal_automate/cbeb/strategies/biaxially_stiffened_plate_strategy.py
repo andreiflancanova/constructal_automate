@@ -157,19 +157,19 @@ class BiaxiallyStiffenedPlateStrategy(PlateStrategy):
         # mapdl.asel("ALL")
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.aglue(na1="ALL")
-        mapdl.asel("S", "LOC", "X", round(OFFSET_PERCENTUAL_BORDA_INICIAL*float(a_ts), 1), round(OFFSET_PERCENTUAL_BORDA_FINAL*float(a_ts)), 1)
+        mapdl.asel("S", "LOC", "X", round(OFFSET_PERCENTUAL_BORDA_INICIAL*float(a_ts), 1), round(OFFSET_PERCENTUAL_BORDA_FINAL*float(a_ts), 1))
         for i in range(N_ts):
-            mapdl.asel("A", "LOC", "X", round(((i+1)+OFFSET_PERCENTUAL_BORDA_INICIAL)*float(a_ts),1), round(((i+1)+OFFSET_PERCENTUAL_BORDA_FINAL)*float(a_ts)),1)
+            mapdl.asel("A", "LOC", "X", round(((i+1)+OFFSET_PERCENTUAL_BORDA_INICIAL)*float(a_ts),1), round(((i+1)+OFFSET_PERCENTUAL_BORDA_FINAL)*float(a_ts),1))
         mapdl.asel("R", "LOC", "Z", round(-0.5*float(t_1), 1), round(0.5*float(t_1)), 1)
         mapdl.cm(PLACA_POS_APTN, "AREA")
 
         # Criar componente da ENRIJECEDORES_LONGITUDINAIS_POS_APTN
         # mapdl.asel("ALL")
         mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.asel("S", "LOC", "X", round(OFFSET_PERCENTUAL_BORDA_INICIAL*float(a_ts), 1), round(OFFSET_PERCENTUAL_BORDA_FINAL*float(a_ts)), 1)
+        mapdl.asel("S", "LOC", "X", round(OFFSET_PERCENTUAL_BORDA_INICIAL*float(a_ts), 1), round(OFFSET_PERCENTUAL_BORDA_FINAL*float(a_ts), 1))
         for i in range(N_ts):
-            mapdl.asel("A", "LOC", "X", round(((i+1)+OFFSET_PERCENTUAL_BORDA_INICIAL)*float(a_ts), 1), round(((i+1)+OFFSET_PERCENTUAL_BORDA_FINAL)*float(a_ts)), 1)
-        mapdl.asel("R", "LOC", "Z", round(OFFSET_PERCENTUAL_Z_INICIAL*float(h_s), 1), round(OFFSET_PERCENTUAL_Z_FINAL*float(h_s)), 1)
+            mapdl.asel("A", "LOC", "X", round(((i+1)+OFFSET_PERCENTUAL_BORDA_INICIAL)*float(a_ts), 1), round(((i+1)+OFFSET_PERCENTUAL_BORDA_FINAL)*float(a_ts), 1))
+        mapdl.asel("R", "LOC", "Z", round(OFFSET_PERCENTUAL_Z_INICIAL*float(h_s), 1), round(OFFSET_PERCENTUAL_Z_FINAL*float(h_s), 1))
         mapdl.cm(ENRIJECEDORES_LONGITUDINAIS_POS_APTN, "AREA")
 
         # Criar componente da ENRIJECEDORES_TRANSVERSAIS_POS_APTN
