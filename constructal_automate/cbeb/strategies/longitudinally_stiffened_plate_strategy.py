@@ -342,14 +342,14 @@ class LongitudinallyStiffenedPlateStrategy(PlateStrategy):
             mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
             mapdl.sfl(LINES_BORDA_LS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
 
-    def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_eq_ts, t_eq_ls):
-    # def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_1):
-        p_u_ts = round(material.yielding_stress*t_eq_ts, 2)
-        # p_u_ts = round(material.yielding_stress*t_1, 2)
+    # def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_eq_ts, t_eq_ls):
+    def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_1):
+        # p_u_ts = round(material.yielding_stress*t_eq_ts, 2)
+        p_u_ts = round(material.yielding_stress*t_1, 2)
 
         if self.is_biaxial_buckling(buckling_load_type):
-            p_u_ls = round(material.yielding_stress*t_eq_ls, 2)
-            # p_u_ls = round(material.yielding_stress*t_1, 2)
+            # p_u_ls = round(material.yielding_stress*t_eq_ls, 2)
+            p_u_ls = round(material.yielding_stress*t_1, 2)
         else:
             p_u_ls = 0
             

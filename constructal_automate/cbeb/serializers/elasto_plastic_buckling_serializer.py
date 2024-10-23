@@ -45,18 +45,19 @@ class ElastoPlasticBucklingSerializer(serializers.ModelSerializer):
 
         service = ElastoPlasticBucklingService(strategy)
 
-        p_u_ts, p_u_ls, n_u, sigma_u_ts, sigma_u_ls, w_max, von_mises_dist_img_path, w_dist_img_path = service.create(
+        # p_u_ts, p_u_ls, n_u, sigma_u_ts, sigma_u_ls, w_max, von_mises_dist_img_path, w_dist_img_path = service.create(
+        p_u, n_u, sigma_u, w_max, von_mises_dist_img_path, w_dist_img_path = service.create(
             associated_stiffened_plate,
             associated_stiffened_plate_analysis,
         )
 
         elasto_plastic_buckling_instance = ElastoPlasticBuckling.objects.create(
             stiffened_plate_analysis=associated_stiffened_plate_analysis,
-            p_u_ts=p_u_ts,
-            p_u_ls=p_u_ls,
+            # p_u_ts=p_u_ts,
+            # p_u_ls=p_u_ls,
+            p_u=p_u,
             n_u=n_u,
-            sigma_u_ts=sigma_u_ts,
-            sigma_u_ls=sigma_u_ls,
+            sigma_u=sigma_u,
             w_max=w_max,
             von_mises_dist_img_path=von_mises_dist_img_path,
             w_dist_img_path=w_dist_img_path

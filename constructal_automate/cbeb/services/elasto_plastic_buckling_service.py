@@ -15,7 +15,6 @@ IN_PROGRESS_PROCESSING_STATUS = ProcessingStatus.objects.get(name='In Progress')
 COMPLETED_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Completed')
 FAILED_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Failed')
 CANCELLED_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Cancelled')
-LOAD_MULTIPLIER = 1
 
 MAPDL_RUN_LOCATION = os.getenv('MAPDL_RUN_LOCATION')
 MAPDL_START_TIMEOUT = int(os.getenv('MAPDL_START_TIMEOUT', 30))
@@ -38,8 +37,8 @@ class ElastoPlasticBucklingService():
         a = stiffened_plate.plate.a
         b = stiffened_plate.plate.b
         t_1 = stiffened_plate.t_1
-        t_eq_ts = stiffened_plate.t_eq_ts
-        t_eq_ls = stiffened_plate.t_eq_ls
+        # t_eq_ts = stiffened_plate.t_eq_ts
+        # t_eq_ls = stiffened_plate.t_eq_ls
 
         material = stiffened_plate_analysis.material
 
@@ -60,9 +59,11 @@ class ElastoPlasticBucklingService():
             stiffened_plate_analysis.save()
             w0 = self.define_initial_deflection(b)
             self.load_previous_steps_analysis_db(mapdl, analysis_log_path, analysis_dir_path, analysis_db_path)
-            self.define_nonlinear_analysis_params(mapdl, w0, rst_file_path, material, t_eq_ts, t_eq_ls)
-            p_u_ts, p_u_ls = self.strategy.apply_load_for_elasto_plastic_buckling(mapdl, buckling_load_type, material, t_eq_ts, t_eq_ls)
+            # self.define_nonlinear_analysis_params(mapdl, w0, rst_file_path, material, t_eq_ts, t_eq_ls)
+            self.define_nonlinear_analysis_params(mapdl, w0, rst_file_path, material, t_1)
+            # p_u_ts, p_u_ls = self.strategy.apply_load_for_elasto_plastic_buckling(mapdl, buckling_load_type, material, t_eq_ts, t_eq_ls)
             # p_u_ts, p_u_ls = self.strategy.apply_load_for_elasto_plastic_buckling(mapdl, buckling_load_type, material, t_1)
+            p_u = self.strategy.apply_load_for_elasto_plastic_buckling(mapdl, buckling_load_type, material, t_1)
             
             try:
                 self.solve_elasto_plastic_buckling(mapdl)
@@ -77,8 +78,9 @@ class ElastoPlasticBucklingService():
                     remove_temp_files=True,
                     cleanup_on_exit=True,
                 )
-            n_u, sigma_u_ts, sigma_u_ls = self.calc_ultimate_buckling_load_and_stress(mapdl, buckling_load_type, t_eq_ts, t_eq_ls)
+            # n_u, sigma_u_ts, sigma_u_ls = self.calc_ultimate_buckling_load_and_stress(mapdl, buckling_load_type, t_eq_ts, t_eq_ls)
             # n_u, sigma_u_ts, sigma_u_ls = self.calc_ultimate_buckling_load_and_stress(mapdl, buckling_load_type, t_1)
+            n_u, sigma_u = self.calc_ultimate_buckling_load_and_stress(mapdl, buckling_load_type, t_1)
             w_max = self.calc_z_deflection(mapdl, a, b)
             von_mises_dist_img_path, w_dist_img_path = self.plot_images(mapdl, analysis_db_path, material.yielding_stress)
             mapdl.finish()
@@ -92,7 +94,8 @@ class ElastoPlasticBucklingService():
             stiffened_plate_analysis.save()
         finally:
             mapdl.exit()
-        return p_u_ts, p_u_ls, n_u, sigma_u_ts, sigma_u_ls, w_max, von_mises_dist_img_path, w_dist_img_path
+        # return p_u_ts, p_u_ls, n_u, sigma_u_ts, sigma_u_ls, w_max, von_mises_dist_img_path, w_dist_img_path
+        return p_u, n_u, sigma_u, w_max, von_mises_dist_img_path, w_dist_img_path
 
     def load_previous_steps_analysis_db(self, mapdl, analysis_log_path, analysis_dir_path, analysis_db_path):
         mapdl.open_apdl_log(filename=analysis_log_path, mode='a')
@@ -112,8 +115,8 @@ class ElastoPlasticBucklingService():
     def is_stiffened_plate(self, h_s, t_s):
         return h_s != 0.00 and t_s != 0.00
 
-    def define_nonlinear_analysis_params(self, mapdl, w0, rst_file_path, material, t_eq_ts, t_eq_ls):
-    # def define_nonlinear_analysis_params(self, mapdl, w0, rst_file_path, material, t_1):
+    # def define_nonlinear_analysis_params(self, mapdl, w0, rst_file_path, material, t_eq_ts, t_eq_ls):
+    def define_nonlinear_analysis_params(self, mapdl, w0, rst_file_path, material, t_1):
         mapdl.allsel(labt="ALL", entity="ALL")
 
         # Entrar no /PREP7 para análise de flambagem elasto-plástica
@@ -154,12 +157,11 @@ class ElastoPlasticBucklingService():
         mapdl.outres("ALL", "ALL")
 
         ## Definir o valor da carga de referência ao final do Passo de Carga (após todos os sub-passos terem sido executados)
-        
-        t_eq = max(t_eq_ts, t_eq_ls)
+        # t_eq = max(t_eq_ts, t_eq_ls)
+        # n_e = round(material.yielding_stress*t_eq, 1)
 
-        n_e = round(material.yielding_stress*t_eq, 1)
+        n_e = round(material.yielding_stress*t_1, 1)
         mapdl.time(n_e)
-        # mapdl.neqit(neqit=100)
 
     def solve_elasto_plastic_buckling(self, mapdl):
         
@@ -170,27 +172,32 @@ class ElastoPlasticBucklingService():
             print("An error occurred, but the analysis will try to continue")
         mapdl.finish()
 
-    def calc_ultimate_buckling_load_and_stress(self, mapdl, buckling_load_type, t_eq_ts, t_eq_ls):
-    # def calc_ultimate_buckling_load_and_stress(self, mapdl, buckling_load_type, t_1):
+    # def calc_ultimate_buckling_load_and_stress(self, mapdl, buckling_load_type, t_eq_ts, t_eq_ls):
+    def calc_ultimate_buckling_load_and_stress(self, mapdl, buckling_load_type, t_1):
         mapdl.post1()
 
         n_u = mapdl.result.time_values[len(mapdl.result.time_values)-2]
         
-        if self.is_biaxial_buckling(buckling_load_type):
-            sigma_u_ts = n_u/float(t_eq_ts)
-            sigma_u_ls = n_u/float(t_eq_ls)
-        else:
-            sigma_u_ts = n_u/float(t_eq_ts)
-            sigma_u_ls = 0
+        # if self.is_biaxial_buckling(buckling_load_type):
+        #     sigma_u_ts = n_u/float(t_eq_ts)
+        #     sigma_u_ls = n_u/float(t_eq_ls)
+        # else:
+        #     sigma_u_ts = n_u/float(t_eq_ts)
+        #     sigma_u_ls = 0
         
+
         # if self.is_biaxial_buckling(buckling_load_type):
         #     sigma_u_ts = n_u/float(t_1)
         #     sigma_u_ls = n_u/float(t_1)
         # else:
         #     sigma_u_ts = n_u/float(t_1)
         #     sigma_u_ls = 0
+
+        sigma_u = n_u/float(t_1)
+
         mapdl.save()
-        return n_u, sigma_u_ts, sigma_u_ls
+        # return n_u, sigma_u_ts, sigma_u_ls
+        return n_u, sigma_u
 
     def calc_z_deflection(self, mapdl, a, b):
         mapdl.run(f"NSEL,S,NODE,,NODE({float(a)*0.5},{float(b)*0.5},0)")

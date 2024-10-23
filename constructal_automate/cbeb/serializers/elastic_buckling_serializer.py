@@ -46,7 +46,8 @@ class ElasticBucklingSerializer(serializers.ModelSerializer):
 
         service = ElasticBucklingService(strategy)
 
-        n_cr, sigma_cr_ts, sigma_cr_ls, w_center = service.create(
+        # n_cr, sigma_cr_ts, sigma_cr_ls, w_center = service.create(
+        n_cr, sigma_cr, w_center = service.create(
             associated_stiffened_plate_analysis,
             associated_stiffened_plate
         )
@@ -54,8 +55,9 @@ class ElasticBucklingSerializer(serializers.ModelSerializer):
         elastic_buckling_instance = ElasticBuckling.objects.create(
             stiffened_plate_analysis=associated_stiffened_plate_analysis,
             n_cr=n_cr,
-            sigma_cr_ts=sigma_cr_ts,
-            sigma_cr_ls=sigma_cr_ls,
+            # sigma_cr_ts=sigma_cr_ts,
+            # sigma_cr_ls=sigma_cr_ls,
+            sigma_cr=sigma_cr,
             w_center=w_center,
             **validated_data
         )

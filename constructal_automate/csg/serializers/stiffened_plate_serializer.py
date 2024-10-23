@@ -29,21 +29,21 @@ class StiffenedPlateSerializer(serializers.ModelSerializer):
 
         t_1 = service.calc_corrected_plate_thickness(phi, t_0, k)
 
-        length_ts, length_ls = service.calc_section_length_in_both_directions(a, b, k, N_ls, N_ts, h_s)
-        area_ts, area_ls = service.calc_section_area_in_both_directions(a, b, k, t_1, N_ls, N_ts, h_s, t_s)
-        t_eq_ts, t_eq_ls = service.calc_section_equivalent_thickness_in_both_directions(length_ts, length_ls, area_ts, area_ls)
+        # length_ts, length_ls = service.calc_section_length_in_both_directions(a, b, k, N_ls, N_ts, h_s)
+        # area_ts, area_ls = service.calc_section_area_in_both_directions(a, b, k, t_1, N_ls, N_ts, h_s, t_s)
+        # t_eq_ts, t_eq_ls = service.calc_section_equivalent_thickness_in_both_directions(length_ts, length_ls, area_ts, area_ls)
 
         validated_data['h_s'] = h_s
         validated_data['t_s'] = t_s
         validated_data['t_1'] = t_1
         
-        validated_data['length_ts'] = length_ts
-        validated_data['length_ls'] = length_ls
-        validated_data['area_ts'] = area_ts
-        validated_data['area_ls'] = area_ls
+        # validated_data['length_ts'] = length_ts
+        # validated_data['length_ls'] = length_ls
+        # validated_data['area_ts'] = area_ts
+        # validated_data['area_ls'] = area_ls
 
-        validated_data['t_eq_ts'] = t_eq_ts
-        validated_data['t_eq_ls'] = t_eq_ls
+        # validated_data['t_eq_ts'] = t_eq_ts
+        # validated_data['t_eq_ls'] = t_eq_ls
 
         stiffened_plate_instance = StiffenedPlate.objects.create(plate = associated_plate, **validated_data)
 
@@ -66,9 +66,9 @@ class StiffenedPlateSerializer(serializers.ModelSerializer):
         h_s, t_s = service.calc_stiffener_dimensions(a, b, t_0, phi, N_ls, N_ts, k)
         t_1 = service.calc_corrected_plate_thickness(phi, t_0, k)
 
-        length_ts, length_ls = service.calc_section_length_in_both_directions(a, b, N_ls, N_ts, h_s)
-        area_ts, area_ls = service.calc_section_area_in_both_directions(a, b, t_1, N_ls, N_ts, h_s)
-        t_eq_ts, t_eq_ls = service.calc_section_equivalent_thickness_in_both_directions(length_ts, length_ls, area_ts, area_ls)
+        # length_ts, length_ls = service.calc_section_length_in_both_directions(a, b, N_ls, N_ts, h_s)
+        # area_ts, area_ls = service.calc_section_area_in_both_directions(a, b, t_1, N_ls, N_ts, h_s)
+        # t_eq_ts, t_eq_ls = service.calc_section_equivalent_thickness_in_both_directions(length_ts, length_ls, area_ts, area_ls)
 
         instance.plate = associated_plate
         instance.phi = phi
@@ -79,13 +79,13 @@ class StiffenedPlateSerializer(serializers.ModelSerializer):
         instance.t_s = t_s
         instance.t_1 = t_1
         
-        instance.length_ts = length_ts
-        instance.length_ls = length_ls
-        instance.area_ts = area_ts
-        instance.area_ls = area_ls
+        # instance.length_ts = length_ts
+        # instance.length_ls = length_ls
+        # instance.area_ts = area_ts
+        # instance.area_ls = area_ls
 
-        instance.t_eq_ts = t_eq_ts
-        instance.t_eq_ls = t_eq_ls
+        # instance.t_eq_ts = t_eq_ts
+        # instance.t_eq_ls = t_eq_ls
 
         instance.save()
         return instance
