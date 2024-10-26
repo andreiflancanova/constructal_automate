@@ -73,8 +73,8 @@ class ElastoPlasticBucklingService():
                     remove_temp_files=True,
                     cleanup_on_exit=True,
                 )
-            n_u, sigma_u = self.calc_ultimate_buckling_load_and_stress(mapdl, buckling_load_type, t_1)
-            w_max = self.calc_z_deflection(mapdl, a, b)
+            n_u, sigma_u = self.calc_ultimate_buckling_load_and_stress(mapdl, t_1)
+            w_max = self.calc_z_deflection(mapdl)
             von_mises_dist_img_path, w_dist_img_path = self.plot_images(mapdl, analysis_db_path, material.yielding_stress)
             mapdl.finish()
             mapdl._close_apdl_log()
@@ -139,7 +139,7 @@ class ElastoPlasticBucklingService():
         mapdl.pred(sskey="OFF")
 
         ## Definir o número de sub-passos a serem utilizados para o Passo de Carga atual
-        mapdl.nsubst(200, 400, 50)
+        mapdl.nsubst(200, 400, 25)
 
         ## Limpar os dados de solução salvos no DB do ANSYS para salvar os resultados dos sub-passos na análise de flambagem elasto-plástica
         mapdl.outres("ERASE")
@@ -161,20 +161,29 @@ class ElastoPlasticBucklingService():
             print("An error occurred, but the analysis will try to continue")
         mapdl.finish()
 
-    def calc_ultimate_buckling_load_and_stress(self, mapdl, buckling_load_type, t_1):
+    def calc_ultimate_buckling_load_and_stress(self, mapdl, t_1):
         mapdl.post1()
 
-        n_u = mapdl.result.time_values[len(mapdl.result.time_values)-2]
+        n_u = mapdl.post_processing.frequency_values[len(mapdl.post_processing.frequency_values)-2]
 
         sigma_u = n_u/float(t_1)
 
         mapdl.save()
         return n_u, sigma_u
 
-    def calc_z_deflection(self, mapdl, a, b):
-        mapdl.run(f"NSEL,S,NODE,,NODE({float(a)*0.5},{float(b)*0.5},0)")
-        mapdl.set(lstep=1, sbstep=len(mapdl.result.time_values)-1)
-        z_deflection = abs(mapdl.post_processing.nodal_displacement("Z")[0])
+    def calc_z_deflection(self, mapdl):
+        mapdl.set(lstep=1, sbstep=(len(mapdl.post_processing.frequency_values)-1))
+        negative_z_deflection = min(mapdl.post_processing.nodal_displacement("Z"))
+        abs_negative_z_deflection = abs(negative_z_deflection)
+
+        positive_z_deflection = max(mapdl.post_processing.nodal_displacement("Z"))
+
+        if abs_negative_z_deflection > positive_z_deflection:
+            z_deflection = abs_negative_z_deflection
+        else:
+            z_deflection = positive_z_deflection
+        
+
         return z_deflection
 
     def plot_images(self, mapdl, analysis_db_path, material_yielding_stress):
@@ -185,7 +194,7 @@ class ElastoPlasticBucklingService():
         w_dist_img_path = analysis_db_path.replace('.db', W_IMG_SUFFIX)
 
         mapdl.result.plot_principal_nodal_stress(
-            len(mapdl.result.time_values)-2,
+            (len(mapdl.post_processing.frequency_values)-2),
             "SEQV",
             lighting=False,
             cpos="iso",
@@ -215,7 +224,7 @@ class ElastoPlasticBucklingService():
         )
 
         mapdl.result.plot_principal_nodal_stress(
-            len(mapdl.result.time_values)-2,
+            (len(mapdl.post_processing.frequency_values)-2),
             "SEQV",
             lighting=False,
             cpos="iso",
@@ -245,7 +254,7 @@ class ElastoPlasticBucklingService():
         )
 
         mapdl.result.plot_nodal_displacement(
-            len(mapdl.result.time_values)-2,
+            (len(mapdl.post_processing.frequency_values)-2),
             "UZ",
             lighting=False,
             cpos="iso",
