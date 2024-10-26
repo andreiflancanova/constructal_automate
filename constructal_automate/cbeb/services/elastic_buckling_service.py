@@ -37,11 +37,7 @@ class ElasticBucklingService():
         buckling_load_type = stiffened_plate_analysis.buckling_load_type.name
         a = stiffened_plate.plate.a
         b = stiffened_plate.plate.b
-        t_1 = stiffened_plate.plate.t_1
-        # length_ts = stiffened_plate.length_ts
-        # length_ls = stiffened_plate.length_ls
-        # area_ts = stiffened_plate.area_ts
-        # area_ls = stiffened_plate.area_ls
+        t_1 = stiffened_plate.t_1
 
         mapdl = launch_mapdl(
             run_location=MAPDL_RUN_LOCATION,
@@ -58,9 +54,7 @@ class ElasticBucklingService():
             self.load_previous_steps_analysis_db(mapdl, analysis_log_path, analysis_dir_path, analysis_db_path)
             self.strategy.apply_load_for_elastic_buckling(mapdl, buckling_load_type)
             self.solve_elastic_buckling(mapdl)
-            # n_cr, sigma_cr_ts, sigma_cr_ls  = self.calc_buckling_load_and_stress(mapdl, buckling_load_type, length_ts, length_ls, area_ts, area_ls)
-            # n_cr, sigma_cr_ts, sigma_cr_ls  = self.calc_buckling_load_and_stress(mapdl, buckling_load_type, t_1)
-            n_cr, sigma_cr  = self.calc_buckling_load_and_stress(mapdl, buckling_load_type, t_1)
+            n_cr, sigma_cr  = self.calc_buckling_stress(mapdl, t_1)
             w_center = self.calc_z_deflection(mapdl, a, b)
             stiffened_plate_analysis.analysis_rst_file_path = analysis_log_path.replace('.txt', '.rst')
             mapdl.finish()
@@ -74,7 +68,6 @@ class ElasticBucklingService():
             stiffened_plate_analysis.save()
         finally:
             mapdl.exit()
-        # return n_cr, sigma_cr_ts, sigma_cr_ls, w_center
         return n_cr, sigma_cr, w_center
 
     def load_previous_steps_analysis_db(self, mapdl, analysis_log_path, analysis_dir_path, analysis_db_path):
@@ -114,26 +107,12 @@ class ElasticBucklingService():
         ## Encerrar /SOLU da análise de flambagem elástica
         mapdl.finish()
         mapdl.save(slab='ALL')
-        # mapdl.run("/POST1")
         mapdl.post1()
 
-    # def calc_buckling_load_and_stress(self, mapdl, buckling_load_type, length_ts, length_ls, area_ts, area_ls):
-    def calc_buckling_load_and_stress(self, mapdl, buckling_load_type, t_1):
+    def calc_buckling_stress(self, mapdl, t_1):
         n_cr = mapdl.post_processing.time
-
-        if self.is_biaxial_buckling(buckling_load_type):
-            # sigma_cr_ts = n_cr * (float(length_ts)/float(area_ts))
-            # sigma_cr_ls = n_cr * (float(length_ls)/float(area_ls))
-            sigma_cr = n_cr/float(t_1)
-            # sigma_cr_ts = n_cr/float(t_1)
-            # sigma_cr_ls = n_cr/float(t_1)
-        else:
-            # sigma_cr_ts = n_cr * (float(length_ts)/float(area_ts))
-            sigma_cr = n_cr/float(t_1)
-            # sigma_cr_ts = n_cr/float(t_1)
-            # sigma_cr_ls = 0
+        sigma_cr = n_cr/float(t_1)
         mapdl.save(slab='ALL')
-        # return n_cr, sigma_cr_ts, sigma_cr_ls
         return n_cr, sigma_cr
 
     def calc_z_deflection(self, mapdl, a, b):
