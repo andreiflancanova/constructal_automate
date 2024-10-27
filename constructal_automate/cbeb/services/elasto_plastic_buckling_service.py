@@ -139,7 +139,7 @@ class ElastoPlasticBucklingService():
         mapdl.pred(sskey="OFF")
 
         ## Definir o número de sub-passos a serem utilizados para o Passo de Carga atual
-        mapdl.nsubst(200, 400, 25)
+        mapdl.nsubst(200, 400, 50)
 
         ## Limpar os dados de solução salvos no DB do ANSYS para salvar os resultados dos sub-passos na análise de flambagem elasto-plástica
         mapdl.outres("ERASE")
@@ -182,8 +182,6 @@ class ElastoPlasticBucklingService():
             z_deflection = abs_negative_z_deflection
         else:
             z_deflection = positive_z_deflection
-        
-
         return z_deflection
 
     def plot_images(self, mapdl, analysis_db_path, material_yielding_stress):
