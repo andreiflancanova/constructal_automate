@@ -55,7 +55,7 @@ class ElasticBucklingService():
             self.strategy.apply_load_for_elastic_buckling(mapdl, buckling_load_type)
             self.solve_elastic_buckling(mapdl)
             n_cr, sigma_cr  = self.calc_buckling_stress(mapdl, t_1)
-            w_center = self.calc_z_deflection(mapdl, a, b)
+            w_center = self.calc_z_deflection(mapdl)
             stiffened_plate_analysis.analysis_rst_file_path = analysis_log_path.replace('.txt', '.rst')
             mapdl.finish()
             mapdl._close_apdl_log()
@@ -115,9 +115,17 @@ class ElasticBucklingService():
         mapdl.save(slab='ALL')
         return n_cr, sigma_cr
 
-    def calc_z_deflection(self, mapdl, a, b):
-        mapdl.run(f"NSEL,S,NODE,,NODE({float(a)*0.5},{float(b)*0.5},0)")
-        z_deflection = abs(mapdl.prnsol(item="U", comp="Z").to_list()[0][1])
+    def calc_z_deflection(self, mapdl):
+        mapdl.set(lstep=1, sbstep=1)
+        negative_z_deflection = min(mapdl.post_processing.nodal_displacement("Z"))
+        abs_negative_z_deflection = abs(negative_z_deflection)
+
+        positive_z_deflection = max(mapdl.post_processing.nodal_displacement("Z"))
+
+        if abs_negative_z_deflection > positive_z_deflection:
+            z_deflection = abs_negative_z_deflection
+        else:
+            z_deflection = positive_z_deflection
         return z_deflection
 
     def is_biaxial_buckling(self, buckling_load_type):
