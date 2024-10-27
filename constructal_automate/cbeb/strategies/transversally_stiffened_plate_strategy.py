@@ -253,8 +253,10 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
         mapdl.lsla("S")
         mapdl.ksll("S")
         mapdl.ksel("S", "LOC", "X", a)
-        mapdl.ksel("R", "LOC", "Y", b)
-        mapdl.cm(KP_SUPERIOR_DIREITO, "KP")
+        # mapdl.ksel("R", "LOC", "Y", b)
+        # mapdl.cm(KP_SUPERIOR_DIREITO, "KP")
+        mapdl.ksel("R", "LOC", "Y", 0)
+        mapdl.cm(KP_INFERIOR_DIREITO, "KP")
 
         #### Componente das linhas do contorno da placa
         mapdl.allsel(labt="ALL", entity="ALL")
@@ -355,19 +357,18 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dk(KP_INFERIOR_ESQUERDO, "UX", 0)
         mapdl.dk(KP_INFERIOR_ESQUERDO, "UY", 0)
-        mapdl.dk(KP_SUPERIOR_DIREITO, "UY", 0)
+        # mapdl.dk(KP_SUPERIOR_DIREITO, "UY", 0)
+        mapdl.dk(KP_INFERIOR_DIREITO, "UY", 0)
 
         #### Linhas
         ##### Placa
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dl(LINES_CONTORNO_PLACA, "", "UZ", 0)
-        mapdl.dl(LINES_CONTORNO_PLACA, "", "ROTZ", 0)
 
 
         ##### Enrijecedores
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dl(LINES_BORDA_ENRIJECEDORES, "", "UZ", 0)
-        mapdl.dl(LINES_BORDA_ENRIJECEDORES, "", "ROTZ", 0)
 
     def apply_load_for_elastic_buckling(self, mapdl, buckling_load_type):
         

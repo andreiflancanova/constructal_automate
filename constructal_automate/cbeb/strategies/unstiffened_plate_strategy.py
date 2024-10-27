@@ -128,8 +128,10 @@ class UnstiffenedPlateStrategy(PlateStrategy):
         mapdl.lsla("S")
         mapdl.ksll("S")
         mapdl.ksel("S", "LOC", "X", a)
-        mapdl.ksel("R", "LOC", "Y", b)
-        mapdl.cm(KP_SUPERIOR_DIREITO, "KP")
+        mapdl.ksel("R", "LOC", "Y", 0)
+        mapdl.cm(KP_INFERIOR_DIREITO, "KP")
+        # mapdl.ksel("R", "LOC", "Y", b)
+        # mapdl.cm(KP_SUPERIOR_DIREITO, "KP")
 
         #### Componente das linhas do contorno da placa
         mapdl.allsel(labt="ALL", entity="ALL")
@@ -179,7 +181,8 @@ class UnstiffenedPlateStrategy(PlateStrategy):
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dk(KP_INFERIOR_ESQUERDO, "UX", 0)
         mapdl.dk(KP_INFERIOR_ESQUERDO, "UY", 0)
-        mapdl.dk(KP_SUPERIOR_DIREITO, "UY", 0)
+        # mapdl.dk(KP_SUPERIOR_DIREITO, "UY", 0)
+        mapdl.dk(KP_INFERIOR_DIREITO, "UY", 0)
 
         #### Linhas
         ##### Placa
