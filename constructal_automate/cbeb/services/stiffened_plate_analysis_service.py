@@ -173,7 +173,6 @@ class StiffenedPlateAnalysisService():
             mapdl.cwd(analysis_cwd_path)
             mapdl.filname(fname=analysis_name, key=1)
             mapdl.title(analysis_name)
-            mapdl.save(slab='ALL')
         finally:
             stiffened_plate_analysis.analysis_dir_path = analysis_cwd_path
             stiffened_plate_analysis.analysis_lgw_file_path = analysis_log_path

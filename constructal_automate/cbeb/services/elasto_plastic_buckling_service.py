@@ -80,6 +80,7 @@ class ElastoPlasticBucklingService():
             mapdl._close_apdl_log()
             stiffened_plate_analysis.elasto_plastic_buckling_status = COMPLETED_PROCESSING_STATUS
             stiffened_plate_analysis.save()
+            mapdl.save(slab='ALL')
         except MapdlRuntimeError as e:
             print(e)
             mapdl._close_apdl_log()
@@ -157,7 +158,6 @@ class ElastoPlasticBucklingService():
         try:
             mapdl.solve()
         except:
-            mapdl.save(slab='ALL')
             print("An error occurred, but the analysis will try to continue")
         mapdl.finish()
 
@@ -168,7 +168,6 @@ class ElastoPlasticBucklingService():
 
         sigma_u = n_u/float(t_1)
 
-        mapdl.save()
         return n_u, sigma_u
 
     def calc_z_deflection(self, mapdl):
@@ -182,6 +181,7 @@ class ElastoPlasticBucklingService():
             z_deflection = abs_negative_z_deflection
         else:
             z_deflection = positive_z_deflection
+        print('Andrei! w_max = ', z_deflection)
         return z_deflection
 
     def plot_images(self, mapdl, analysis_db_path, material_yielding_stress):

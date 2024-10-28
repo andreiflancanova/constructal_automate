@@ -117,19 +117,16 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
 
         #### Criação do componente
         mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.cmsel("U", ENRIJECEDORES_LONGITUDINAIS_PRE_APTN)
         mapdl.cmsel("U", ENRIJECEDORES_TRANSVERSAIS_PRE_APTN)
         mapdl.cm(PLACA_PRE_APTN, "AREA")
 
         ### Agrupamento dos componentes para aplicação do APTN
         mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.cmsel("S", ENRIJECEDORES_LONGITUDINAIS_PRE_APTN)
-        mapdl.cmsel("A", ENRIJECEDORES_TRANSVERSAIS_PRE_APTN)
+        mapdl.cmsel("S", ENRIJECEDORES_TRANSVERSAIS_PRE_APTN)
         mapdl.cmsel("A", PLACA_PRE_APTN)
         mapdl.cmgrp(aname=CONJUNTO_PRE_APTN,
-                    cnam1=ENRIJECEDORES_LONGITUDINAIS_PRE_APTN,
-                    cnam2=ENRIJECEDORES_TRANSVERSAIS_PRE_APTN,
-                    cnam3=PLACA_PRE_APTN)
+                    cnam1=ENRIJECEDORES_TRANSVERSAIS_PRE_APTN,
+                    cnam2=PLACA_PRE_APTN)
         
         ### Aplicação do APTN (Area Partition)
         mapdl.aptn(na1="ALL")
@@ -139,14 +136,6 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.asel("S", "LOC", "Z", round(-0.5*float(t_1), 1), round(0.5*float(t_1)), 1)
         mapdl.cm(PLACA_POS_APTN, "AREA")
-
-        #### Enrijecedores Longitudinais
-        mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.asel("S", "LOC", "X", round(OFFSET_PERCENTUAL_BORDA_INICIAL*float(a_ts), 1), round(OFFSET_PERCENTUAL_BORDA_FINAL*float(a_ts), 1))
-        for i in range(N_ts):
-            mapdl.asel("A", "LOC", "X", round(((i+1)+OFFSET_PERCENTUAL_BORDA_INICIAL)*float(a_ts), 1), round(((i+1)+OFFSET_PERCENTUAL_BORDA_FINAL)*float(a_ts), 1))
-        mapdl.asel("R", "LOC", "Z", round(OFFSET_PERCENTUAL_Z_INICIAL*float(h_s), 1), round(OFFSET_PERCENTUAL_Z_FINAL*float(h_s), 1))
-        mapdl.cm(ENRIJECEDORES_LONGITUDINAIS_POS_APTN, "AREA")
 
         #### Enrijecedores Transversais
         mapdl.allsel(labt="ALL", entity="ALL")
@@ -159,12 +148,7 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
         ### Agrupamento dos enrijecedores para execução do AGLUE ("colar" faces comuns)
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.cmgrp(aname=ENRIJECEDORES_POS_APTN,
-            cnam1=ENRIJECEDORES_LONGITUDINAIS_POS_APTN,
-            cnam2=ENRIJECEDORES_TRANSVERSAIS_POS_APTN)
-
-        ### Aplicação do AGLUE nos enrijecedores
-        mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.aglue(na1=ENRIJECEDORES_POS_APTN)
+            cnam1=ENRIJECEDORES_TRANSVERSAIS_POS_APTN)
 
         ### Agrupamento da placa com os enrijecedores para execução do AGLUE ("colar" faces comuns)
         mapdl.cmgrp(aname=CONJUNTO_POS_APTN,
@@ -205,14 +189,6 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
         mapdl.aesize(ENRIJECEDORES_TRANSVERSAIS_POS_APTN, mesh_size)
         mapdl.amesh(ENRIJECEDORES_TRANSVERSAIS_POS_APTN)
 
-        ### Meshing dos enrijecedores longitudinais
-        mapdl.type(1)
-        mapdl.mat(1)
-        mapdl.run("REAL")
-        mapdl.esys(0)
-        mapdl.secnum(2)
-        mapdl.aesize(ENRIJECEDORES_LONGITUDINAIS_POS_APTN, mesh_size)
-        mapdl.amesh(ENRIJECEDORES_LONGITUDINAIS_POS_APTN)
 
         ### Aplicação do NUMMRG para mergear entidades comuns que existem por conta da sobreposição
         mapdl.allsel(labt="ALL", entity="ALL")
@@ -325,30 +301,9 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
                     cnam1=LINES_BORDA_TS_INFERIOR,
                     cnam2=LINES_BORDA_TS_SUPERIOR)
 
-        ### Enrijecedores Longitudinais
-        #### Componente das linhas da borda esquerda dos enrijecedores longitudinais (X = 0)
-        mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.cmsel("S", ENRIJECEDORES_LONGITUDINAIS_POS_APTN)
-        mapdl.lsla("S")
-        mapdl.lsel("R", "LOC", "X", 0)
-        mapdl.cm(LINES_BORDA_LS_ESQUERDA, "LINE")
-
-        #### Componente das linhas da borda esquerda dos enrijecedores longitudinais (X = A)
-        mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.cmsel("S", ENRIJECEDORES_LONGITUDINAIS_POS_APTN)
-        mapdl.lsla("S")
-        mapdl.lsel("R", "LOC", "X", a)
-        mapdl.cm(LINES_BORDA_LS_DIREITA, "LINE")
-
-        #### Componente do agrupamento das linhas das bordas dos enrijecedores longitudinais
-        mapdl.cmgrp(aname=LINES_BORDA_LS,
-                    cnam1=LINES_BORDA_LS_ESQUERDA,
-                    cnam2=LINES_BORDA_LS_DIREITA)
-
         #### Componente do agrupamento das linhas das bordas dos enrijecedores
         mapdl.cmgrp(aname=LINES_BORDA_ENRIJECEDORES,
-                    cnam1=LINES_BORDA_TS,
-                    cnam2=LINES_BORDA_LS)
+                    cnam1=LINES_BORDA_TS)
 
         ## Aplicação das condições de contorno
 

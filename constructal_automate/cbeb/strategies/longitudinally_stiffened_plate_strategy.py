@@ -154,8 +154,8 @@ class LongitudinallyStiffenedPlateStrategy(PlateStrategy):
             cnam1=ENRIJECEDORES_LONGITUDINAIS_POS_APTN)
 
         ### Aplicação do AGLUE nos enrijecedores
-        mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.aglue(na1=ENRIJECEDORES_POS_APTN)
+        # mapdl.allsel(labt="ALL", entity="ALL")
+        # mapdl.aglue(na1=ENRIJECEDORES_POS_APTN)
 
         ### Agrupamento da placa com os enrijecedores para execução do AGLUE ("colar" faces comuns)
         mapdl.cmgrp(aname=CONJUNTO_POS_APTN,

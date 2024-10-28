@@ -61,6 +61,7 @@ class ElasticBucklingService():
             mapdl._close_apdl_log()
             stiffened_plate_analysis.elastic_buckling_status = COMPLETED_PROCESSING_STATUS
             stiffened_plate_analysis.save()
+            mapdl.save(slab='ALL')
         except MapdlRuntimeError as e:
             print(e)
             mapdl._close_apdl_log()
@@ -106,13 +107,11 @@ class ElasticBucklingService():
 
         ## Encerrar /SOLU da análise de flambagem elástica
         mapdl.finish()
-        mapdl.save(slab='ALL')
         mapdl.post1()
 
     def calc_buckling_stress(self, mapdl, t_1):
         n_cr = mapdl.post_processing.time
         sigma_cr = n_cr/float(t_1)
-        mapdl.save(slab='ALL')
         return n_cr, sigma_cr
 
     def calc_z_deflection(self, mapdl):
