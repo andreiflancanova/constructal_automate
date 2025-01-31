@@ -1,0 +1,691 @@
+swagger: '2.0'
+info:
+  title: Constructal Automate
+  description: API REST para automação de fluxos de modelagem computacional utilizando
+    a biblioteca PyMAPDL para integração com o software Ansys Mechanical APDL
+  license:
+    name: Licença MIT
+  version: v1
+host: 127.0.0.1:8000
+schemes:
+- http
+basePath: /
+consumes:
+- application/json
+produces:
+- application/json
+securityDefinitions:
+  Basic:
+    type: basic
+security:
+- Basic: []
+paths:
+  /plates/:
+    get:
+      operationId: plates_list
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/PlateResponseDTO'
+      tags:
+      - Plates
+    post:
+      operationId: plates_create
+      description: ''
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PlateRequestDTO'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/PlateResponseDTO'
+      tags:
+      - Plates
+    parameters: []
+  /plates/{id}/:
+    get:
+      operationId: plates_read
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/PlateResponseDTO'
+      tags:
+      - Plates
+    put:
+      operationId: plates_update
+      description: ''
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/PlateRequestDTO'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/PlateResponseDTO'
+      tags:
+      - Plates
+
+    delete:
+      operationId: plates_delete
+      description: ''
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - Plates
+    parameters:
+    - name: id
+      in: path
+      description: ID do registro na tabela Plate.
+      required: true
+      type: integer
+  /stiffened-plates/:
+    get:
+      operationId: stiffened-plates_list
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/StiffenedPlateResponseDTO'
+      tags:
+      - StiffenedPlates
+    post:
+      operationId: stiffened-plates_create
+      description: ''
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/StiffenedPlateRequestDTO'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/StiffenedPlateResponseDTO'
+      tags:
+      - StiffenedPlates
+    parameters: []
+  /stiffened-plates/{id}/:
+    get:
+      operationId: stiffened-plates_read
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/StiffenedPlateResponseDTO'
+      tags:
+      - StiffenedPlates
+    put:
+      operationId: stiffened-plates_update
+      description: ''
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/StiffenedPlateRequestDTO'
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/StiffenedPlateResponseDTO'
+      tags:
+      - StiffenedPlates
+    delete:
+      operationId: stiffened-plates_delete
+      description: ''
+      parameters: []
+      responses:
+        '204':
+          description: ''
+      tags:
+      - StiffenedPlates
+    parameters:
+    - name: id
+      in: path
+      description: ID do registro na tabela StiffenedPlate.
+      required: true
+      type: integer
+  /stiffened-plate-analysis/:
+    get:
+      operationId: stiffened-plate-analysis_list
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/StiffenedPlateAnalysisResponseDTO'
+      tags:
+      - StiffenedPlateAnalysis
+    post:
+      operationId: stiffened-plate-analysis_create
+      description: ''
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/StiffenedPlateAnalysisRequestDTO'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/StiffenedPlateAnalysisResponseDTO'
+      tags:
+      - StiffenedPlateAnalysis
+  /stiffened-plate-analysis/{id}/:
+    get:
+      operationId: stiffened-plate-analysis_read
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/StiffenedPlateAnalysisResponseDTO'
+      tags:
+      - StiffenedPlateAnalysis
+    parameters:
+    - name: id
+      in: path
+      description: ID do registro na tabela StiffenedPlateAnalysis.
+      required: true
+      type: integer
+  /elastic-buckling/:
+    get:
+      operationId: elastic-buckling_list
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ElasticBucklingResponseDTO'
+      tags:
+      - ElasticBuckling
+    post:
+      operationId: elastic-buckling_create
+      description: ''
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ElasticBucklingRequestDTO'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/ElasticBucklingResponseDTO'
+      tags:
+      - ElasticBuckling
+    parameters: []
+  /elastic-buckling/{id}/:
+    get:
+      operationId: elastic-buckling_read
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ElasticBucklingResponseDTO'
+      tags:
+      - ElasticBuckling
+    parameters:
+    - name: id
+      in: path
+      description: ID do registro na tabela ElasticBuckling.
+      required: true
+      type: integer
+  /elasto-plastic-buckling/:
+    get:
+      operationId: elasto-plastic-buckling_list
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/ElastoPlasticBucklingResponseDTO'
+      tags:
+      - ElastoPlasticBuckling
+    post:
+      operationId: elasto-plastic-buckling_create
+      description: ''
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/ElastoPlasticBucklingRequestDTO'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/ElastoPlasticBucklingResponseDTO'
+      tags:
+      - ElastoPlasticBuckling
+    parameters: []
+  /elasto-plastic-buckling/{id}/:
+    get:
+      operationId: elasto-plastic-buckling_read
+      description: ''
+      parameters: []
+      responses:
+        '200':
+          description: ''
+          schema:
+            $ref: '#/definitions/ElastoPlasticBucklingResponseDTO'
+      tags:
+      - ElastoPlasticBuckling
+    parameters:
+    - name: id
+      in: path
+      description: ID do registro na tabela ElastoPlasticBuckling.
+      required: true
+      type: integer
+definitions:
+  ElasticBucklingResponseDTO:
+    required:
+    - stiffened_plate_analysis
+    type: object
+    properties:
+      id:
+        title: Id
+        type: integer
+        readOnly: true
+        example: 1
+      n_cr:
+        title: N cr
+        type: string
+        format: decimal
+        x-nullable: true
+        example: "646.71"
+      sigma_cr:
+        title: Sigma cr
+        type: string
+        format: decimal
+        x-nullable: true
+        example: "46.19"
+      w_center:
+        title: W center
+        type: string
+        format: decimal
+        x-nullable: true
+        example: "1.00"
+      stiffened_plate_analysis:
+        title: Stiffened plate analysis
+        type: integer
+        example: 1
+  ElasticBucklingRequestDTO:
+    required:
+    - stiffened_plate_analysis
+    type: object
+    properties:
+      stiffened_plate_analysis:
+        title: Stiffened plate analysis
+        type: integer
+        example: 1
+  ElastoPlasticBucklingResponseDTO:
+    required:
+    - stiffened_plate_analysis
+    type: object
+    properties:
+      id:
+        title: Id
+        type: integer
+        readOnly: true
+        example: 1
+      p_u:
+        title: P u
+        type: string
+        format: decimal
+        x-nullable: true
+        example: 4970
+      n_u:
+        title: N u
+        type: string
+        format: decimal
+        x-nullable: true
+        example: "835.58"
+      sigma_u:
+        title: Sigma u
+        type: string
+        format: decimal
+        x-nullable: true
+        example: "59.68"
+      w_max:
+        title: W max
+        type: string
+        format: decimal
+        x-nullable: true
+        example: "38.0533"
+      w_dist_img_path:
+        title: W dist img path
+        type: string
+        minLength: 1
+        x-nullable: true
+        example: "D:/constructal_automate_analysis_files/verificacao-modelo-ns2a/BL2M1P0.3L2T2_k6.333_MS25_SP1/BL2M1P0.3L2T2_k6.333_MS25_SP1_w_dist.png"
+      von_mises_dist_img_path:
+        title: Von mises dist img path
+        type: string
+        minLength: 1
+        x-nullable: true
+        example: "D:/constructal_automate_analysis_files/verificacao-modelo-ns2a/BL2M1P0.3L2T2_k6.333_MS25_SP1/BL2M1P0.3L2T2_k6.333_MS25_SP1_von_mises_dist.png"
+      stiffened_plate_analysis:
+        title: Stiffened plate analysis
+        type: integer
+        example: 1
+  ElastoPlasticBucklingRequestDTO:
+    required:
+    - stiffened_plate_analysis
+    type: object
+    properties:
+      stiffened_plate_analysis:
+        title: Stiffened plate analysis
+        type: integer
+        example: 1
+  PlateRequestDTO:
+    required:
+    - a
+    - b
+    - t_0
+    type: object
+    properties:
+      a:
+        title: A
+        type: string
+        format: decimal
+        example: "2000.00"
+      b:
+        title: B
+        type: string
+        format: decimal
+        example: "1000.00"
+      t_0:
+        title: T 0
+        type: string
+        format: decimal
+        example: "20.00"
+      description:
+        title: Description
+        type: string
+        minLength: 1
+        x-nullable: true
+        example: "Verificação - Modelo NS2A"
+  PlateResponseDTO:
+    required:
+    - a
+    - b
+    - t_0
+    type: object
+    properties:
+      id:
+        title: Id
+        type: integer
+        readOnly: true
+        example: 1
+      a:
+        title: A
+        type: string
+        format: decimal
+        example: "2000.00"
+      b:
+        title: B
+        type: string
+        format: decimal
+        example: "1000.00"
+      t_0:
+        title: T 0
+        type: string
+        format: decimal
+        example: "20.00"
+      description:
+        title: Description
+        type: string
+        minLength: 1
+        x-nullable: true
+        example: "Verificação - Modelo NS2A"
+  StiffenedPlateAnalysisRequestDTO:
+    required:
+    - mesh_size
+    - material
+    - stiffened_plate
+    - buckling_load_type
+    type: object
+    properties:
+      mesh_size:
+        title: Mesh size
+        type: string
+        format: decimal
+        example: 25
+      case_study:
+        title: Case study
+        type: string
+        minLength: 1
+        x-nullable: true
+        example: "verificacao-modelo-ns2a"
+      material:
+        title: Material
+        type: integer
+        example: 1
+      stiffened_plate:
+        title: Stiffened plate
+        type: integer
+        example: 1
+      buckling_load_type:
+        title: Buckling load type
+        type: integer
+        example: 2
+  StiffenedPlateAnalysisResponseDTO:
+    required:
+    - mesh_size
+    - material
+    - stiffened_plate
+    - buckling_load_type
+    type: object
+    properties:
+      id:
+        title: Id
+        type: integer
+        readOnly: true
+        example: 1
+      mesh_size:
+        title: Mesh size
+        type: string
+        format: decimal
+        example: 25
+      num_elem:
+        title: Num elem
+        type: integer
+        maximum: 4294967295
+        minimum: 0
+        x-nullable: true
+        example: 3200
+      case_study:
+        title: Case study
+        type: string
+        minLength: 1
+        x-nullable: true
+        example: "verificacao-modelo-ns2a"
+      analysis_dir_path:
+        title: Analysis dir path
+        type: string
+        minLength: 1
+        x-nullable: true
+        example: "D:/constructal_automate_analysis_files/verificacao-modelo-ns2a/BL2M1P0.3L2T2_k6.333_MS25_SP1"
+      analysis_rst_file_path:
+        title: Analysis rst file path
+        type: string
+        minLength: 1
+        x-nullable: true
+        example: "D:/constructal_automate_analysis_files/verificacao-modelo-ns2a/BL2M1P0.3L2T2_k6.333_MS25_SP1/BL2M1P0.3L2T2_k6.333_MS25_SP1.rst"
+      analysis_lgw_file_path:
+        title: Analysis lgw file path
+        type: string
+        minLength: 1
+        x-nullable: true
+        example: "D:/constructal_automate_analysis_files/verificacao-modelo-ns2a/BL2M1P0.3L2T2_k6.333_MS25_SP1/BL2M1P0.3L2T2_k6.333_MS25_SP1.txt"
+      material:
+        title: Material
+        type: integer
+        example: 1
+      stiffened_plate:
+        title: Stiffened plate
+        type: integer
+        example: 1
+      buckling_load_type:
+        title: Buckling load type
+        type: integer
+        example: 2
+      elastic_buckling_status:
+        title: Elastic buckling status
+        type: integer
+        x-nullable: true
+        example: 1
+      elasto_plastic_buckling_status:
+        title: Elasto plastic buckling status
+        type: integer
+        x-nullable: true
+        example: 1
+  StiffenedPlateRequestDTO:
+    required:
+    - phi
+    - N_ls
+    - N_ts
+    - k
+    - plate
+    type: object
+    properties:
+      id:
+        title: Id
+        type: integer
+        readOnly: true
+      phi:
+        title: Phi
+        type: string
+        example: "0.3"
+        format: decimal
+      N_ls:
+        title: N ls
+        type: integer
+        example: 2
+        maximum: 2147483647
+        minimum: -2147483648
+      N_ts:
+        title: N ts
+        type: integer
+        example: 2
+        maximum: 2147483647
+        minimum: -2147483648
+      k:
+        title: K
+        type: string
+        example: "6.333"
+        format: decimal
+
+      description:
+        title: Description
+        type: string
+        example: "Verificação Modelo NS2A"
+        minLength: 1
+        x-nullable: true
+      plate:
+        title: PlateResponseDTO
+        type: integer
+        example: 1
+  StiffenedPlateResponseDTO:
+    required:
+    - phi
+    - N_ls
+    - N_ts
+    - k
+    - plate
+    type: object
+    properties:
+      id:
+        title: Id
+        type: integer
+        example: 1
+        readOnly: true
+      phi:
+        title: Phi
+        type: string
+        example: "0.3"
+        format: decimal
+      N_ls:
+        title: N ls
+        type: integer
+        example: 2
+        maximum: 2147483647
+        minimum: -2147483648
+      N_ts:
+        title: N ts
+        type: integer
+        example: 2
+        maximum: 2147483647
+        minimum: -2147483648
+      k:
+        title: K
+        type: string
+        example: "6.333"
+        format: decimal
+      t_1:
+        title: T 1
+        type: string
+        example: "9.8"
+        format: decimal
+        x-nullable: true
+      h_s:
+        title: H s
+        type: string
+        format: decimal
+        example: "54"
+        x-nullable: true
+      t_s:
+        title: T s
+        type: string
+        example: "20"
+        format: decimal
+        x-nullable: true
+      description:
+        title: Description
+        type: string
+        example: "Verificação Modelo NS2A"
+        minLength: 1
+        x-nullable: true
+      plate:
+        title: PlateResponseDTO
+        type: integer
+        example: 1

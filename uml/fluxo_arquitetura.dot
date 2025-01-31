@@ -1,0 +1,153 @@
+digraph "API_Fluxo" {
+    fontname = "Roboto"
+    fontsize = 8
+    rankdir = TB
+    ranksep = .8
+    charset = "utf-8"
+
+    node [
+        fontname = "Roboto"
+        fontsize = 8
+        shape = "plaintext"
+    ]
+
+    edge [
+        fontname = "Roboto"
+        fontsize = 10
+        labelloc="c"
+        labeldistance=2
+    ]
+
+    "HTTPClient" [label=< 
+        <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+            <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+                <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>Cliente HTTP</B></FONT>
+            </TD></TR>
+            <TR><TD ALIGN="CENTER"> Envia dados para processamento</TD></TR>
+        </TABLE>
+    >]
+
+    subgraph cluster_constructal_automate_boundary {
+        label="API REST";
+		labeljust="r";
+        fontname="Roboto";
+        fontsize=12;
+        style=dashed;
+        color="#666666"; // Cor do contorno
+        fontcolor="#666666"; // Cor do título
+
+        "ViewSet" [label=< 
+            <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+                <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+                    <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>ViewSet</B></FONT>
+                </TD></TR>
+                <TR><TD ALIGN="CENTER">Interpreta a requisição HTTP</TD></TR>
+                <TR><TD ALIGN="CENTER">Extrai e valida as informações do corpo da requisição</TD></TR>
+            </TABLE>
+        >]
+
+        "Serializer" [label=< 
+            <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+                <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+                    <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>Serializer</B></FONT>
+                </TD></TR>
+                <TR><TD ALIGN="CENTER">Orquestra as chamadas para a Service</TD></TR>
+                <TR><TD ALIGN="CENTER">Monta os objetos a serem trafegados</TD></TR>
+            </TABLE>
+        >]
+
+        "Service" [label=< 
+            <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+                <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+                    <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>Service</B></FONT>
+                </TD></TR>
+                <TR><TD ALIGN="CENTER">Envia dados para o MAPDL</TD></TR>
+                <TR><TD ALIGN="CENTER">Salva/Consulta as informações no BD</TD></TR>
+            </TABLE>
+        >]
+    }
+
+    "MAPDL" [label=< 
+        <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+            <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+                <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>MAPDL</B></FONT>
+            </TD></TR>
+            <TR><TD ALIGN="CENTER">Gera a geometria do modelo</TD></TR>
+            <TR><TD ALIGN="CENTER">Executa a discretização do modelo</TD></TR>
+            <TR><TD ALIGN="CENTER">Aplica as condições de contorno</TD></TR>
+            <TR><TD ALIGN="CENTER">Realiza os cálculos para solução</TD></TR>
+            <TR><TD ALIGN="CENTER">Fornece dados de pós-processamento</TD></TR>
+        </TABLE>
+    >]
+    
+    "BD" [label=< 
+        <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+            <TR><TD COLSPAN="2" CELLPADDING="5" ALIGN="CENTER" BGCOLOR="#1b563f">
+                <FONT FACE="Roboto" COLOR="white" POINT-SIZE="10"><B>BD</B></FONT>
+            </TD></TR>
+            <TR><TD ALIGN="CENTER">Armazena resultados e </TD></TR>
+            <TR><TD ALIGN="CENTER">informações de processamento</TD></TR>
+        </TABLE>
+    >]
+    
+    "HTTPClient" -> "ViewSet" [
+        arrowhead="normal"
+        fontsize=8
+        labeldistance=4.3
+        labelangle=0
+        headlabel=< 
+            <TABLE BGCOLOR="white" BORDER="0" CELLBORDER="0">
+                <TR><TD ALIGN="CENTER">Requisição HTTP</TD></TR>
+            </TABLE>
+        >
+    ]
+
+    "ViewSet" -> "Serializer" [
+        arrowhead="normal"
+        fontsize=8
+        labeldistance=3
+        labelangle=0
+        headlabel=< 
+            <TABLE BGCOLOR="white" BORDER="0" CELLBORDER="0">
+                <TR><TD ALIGN="CENTER">Dados validados para processamento</TD></TR>
+            </TABLE>
+        >
+    ]
+
+    "Serializer" -> "Service" [
+        arrowhead="normal"
+        fontsize=8
+        labeldistance=3
+        labelangle=0
+        headlabel=< 
+            <TABLE BGCOLOR="white" BORDER="0" CELLBORDER="0">
+                <TR><TD ALIGN="CENTER">Aciona os fluxos de criação de </TD></TR>
+                <TR><TD ALIGN="CENTER">registros e cálculo de informações</TD></TR>
+            </TABLE>
+        >
+    ]
+
+    "Service" -> "MAPDL" [
+        arrowhead="normal"
+        fontsize=8
+        labeldistance=3
+        labelangle=0
+        headlabel=< 
+            <TABLE BGCOLOR="white" BORDER="0" CELLBORDER="0">
+                <TR><TD ALIGN="CENTER">Comunicação via gRPC</TD></TR>
+            </TABLE>
+        >
+    ]
+
+    "Service" -> "BD" [
+        arrowhead="normal"
+        fontsize=8
+        labeldistance=3
+        labelangle=0
+        headlabel=< 
+            <TABLE BGCOLOR="white" BORDER="0" CELLBORDER="0">
+                <TR><TD ALIGN="CENTER">Comunicação via TCP</TD></TR>
+            </TABLE>
+        >
+    ]
+}

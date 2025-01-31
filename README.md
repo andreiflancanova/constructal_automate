@@ -68,3 +68,49 @@ python manage.py runserver --noreload
 ```
 
 OBS.: Durante a implementação do MapdlConnectionPool, foi identificado que durante a criação das conexões com o MAPDL, algum arquivo é criado ou atualizado no diretório do projeto, e isso faz com que o Django reinicie. É por este motivo que é necessário passar a flag --noreload, para que o Django não reinicie quando da alteração de arquivos.
+
+
+#### Graphviz
+Para usar arquivo dot seja gerado, execute:
+
+```bash
+python manage.py graph_models -a --dot > uml/arquitetura_visao_geral.dot
+```
+
+Para gerar o pdf do UML a partir do dot:
+
+```bash
+dot -Tpdf uml/arquitetura_visao_geral.dot -o uml/arquitetura_visao_geral.pdf
+```
+
+```bash
+dot -Tpdf uml/fluxograma_estudo_caso_design_construtal.dot -o uml/fluxograma_estudo_caso_design_construtal.pdf
+```
+
+Para gerar fluxogramas com formatação Latex
+```bash
+dot2tex --format tikz uml/fluxograma_estudo_caso_design_construtal.dot > uml/fluxograma_estudo_caso_design_construtal.tex
+```
+
+Para compilar para pdf:
+```bash
+pdflatex uml/fluxograma_estudo_caso_design_construtal.tex
+```
+
+Para gerar automaticamente a partir do projeto Django:
+
+```bash
+pyreverse -o dot -p cbeb constructal_automate/cbeb
+```
+
+```bash
+dot -Tpdf classes_cbeb.dot -o classes_cbeb.pdf
+```
+
+```bash
+pyreverse -o dot -p csg constructal_automate/csg
+```
+
+```bash
+dot -Tpdf classes_csg.dot -o classes_csg.pdf
+```
