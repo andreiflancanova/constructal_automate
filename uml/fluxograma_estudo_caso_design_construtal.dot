@@ -1,0 +1,156 @@
+digraph "Fluxograma_Design_Construtal" {
+    fontname = "Roboto"
+    fontsize = 10
+    rankdir = TB
+    ranksep = .35
+    charset = "utf-8"
+
+    node [
+        fontname = "Roboto"
+        fontsize = 10
+        shape = "plaintext"
+    ]
+
+    "Inicio" [label=< 
+        <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+            <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER" BGCOLOR="#666666">
+                <FONT FACE="Roboto" COLOR="white" POINT-SIZE="12"><B>Início</B></FONT>
+            </TD></TR>
+            <TR><TD WIDTH="200" HEIGHT="20" ALIGN="CENTER" VALIGN="MIDDLE">Aplicação do Design Construtal</TD></TR>
+        </TABLE>
+    >]
+
+    "Passo01" [label=< 
+        <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" ALIGN="CENTER" VALIGN="MIDDLE" BGCOLOR="#1b563f">
+                <FONT FACE="Roboto" COLOR="white" POINT-SIZE="12"><B>Passo 01: Definir o sistema de fluxo de engenharia</B></FONT>
+            </TD></TR>
+            <TR><TD WIDTH="350" HEIGHT="20" ALIGN="CENTER" VALIGN="MIDDLE">Placas com Enrijecedores submetidas à Flambagem Elasto-Plástica Biaxial</TD></TR>
+        </TABLE>
+    >]
+
+    "Passo02" [label=< 
+        <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" ALIGN="CENTER" VALIGN="MIDDLE" BGCOLOR="#1b563f">
+                <FONT FACE="Roboto" COLOR="white" POINT-SIZE="12"><B>Passo 02: Identificar o tipo de fluxo</B></FONT>
+            </TD></TR>
+            <TR><TD WIDTH="250" HEIGHT="20" ALIGN="CENTER" VALIGN="MIDDLE">Fluxo de Tensões</TD></TR>
+        </TABLE>
+    >]
+
+    "Passo03" [label=< 
+        <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0" CELLPADDING="4">
+            <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER" BGCOLOR="#1b563f">
+                <FONT FACE="Roboto" COLOR="white" POINT-SIZE="12"><B>Passo 03: Identificar como facilitar o fluxo</B></FONT>
+            </TD></TR>
+            <TR><TD WIDTH="300" HEIGHT="20" ALIGN="CENTER" VALIGN="MIDDLE">Maximizar a Tensão Última de Flambagem Normalizada (NUS)</TD></TR>
+            <TR><TD WIDTH="300" HEIGHT="20" ALIGN="CENTER" VALIGN="MIDDLE">Minimizar a Deflexão Máxima Normalizada (NMD)</TD></TR>
+        </TABLE>
+    >]
+
+    "Passo04" [label=< 
+        <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+            <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER" BGCOLOR="#1b563f">
+                <FONT FACE="Roboto" COLOR="white" POINT-SIZE="12"><B>Passo 04: Identificar as restrições</B></FONT>
+            </TD></TR>
+            <TR><TD WIDTH="250" HEIGHT="20" ALIGN="CENTER" VALIGN="MIDDLE">V<sub>T</sub>, Φ, a e b</TD></TR>
+        </TABLE>
+    >]
+
+    "Passo05" [label=< 
+        <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+            <TR><TD COLSPAN="1" CELLPADDING="4" ALIGN="CENTER" BGCOLOR="#1b563f">
+                <FONT FACE="Roboto" COLOR="white" POINT-SIZE="12"><B>Passo 05: Identificar os Graus de Liberdade (GDL)</B></FONT>
+            </TD></TR>
+            <TR><TD WIDTH="300" HEIGHT="20" ALIGN="CENTER" VALIGN="MIDDLE">N<sub>ls</sub>, N<sub>ts</sub>  e h<sub>s</sub>/t<sub>s</sub></TD></TR>
+        </TABLE>
+    >]
+
+    "Passo06" [label=< 
+    <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+        <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER" BGCOLOR="#1b563f">
+            <FONT FACE="Roboto" COLOR="white" POINT-SIZE="12"><B>Passo 06: Definir o Método de Solução</B></FONT>
+        </TD></TR>
+        <TR><TD WIDTH="300" HEIGHT="20" ALIGN="CENTER" VALIGN="MIDDLE">Simulação Numérica com uso de API REST</TD></TR>
+    </TABLE>
+    >]
+
+    "Passo07" [label=< 
+    <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+        <TR><TD COLSPAN="1" CELLPADDING="4" ALIGN="CENTER" BGCOLOR="#1b563f">
+            <FONT FACE="Roboto" COLOR="white" POINT-SIZE="12"><B>Passo 07: Escolher o Método de Otimização</B></FONT>
+        </TD></TR>
+        <TR><TD WIDTH="300" HEIGHT="20" ALIGN="CENTER" VALIGN="MIDDLE">Busca Exaustiva</TD></TR>
+    </TABLE>
+    >]
+
+    "Passo08" [label=< 
+    <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+        <TR><TD COLSPAN="1" CELLPADDING="4" ALIGN="CENTER" BGCOLOR="#1b563f">
+            <FONT FACE="Roboto" COLOR="white" POINT-SIZE="12"><B>Passo 08: Definir o Espaço de Busca para Avaliação Geométrica</B></FONT>
+        </TD></TR>
+        <TR><TD WIDTH="400" HEIGHT="20" ALIGN="CENTER" VALIGN="MIDDLE">Permutação dos intervalos de restrição e graus de liberdade</TD></TR>
+    </TABLE>
+    >]
+
+    "Passo09" [label=< 
+    <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+        <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER" BGCOLOR="#1b563f">
+            <FONT FACE="Roboto" COLOR="white" POINT-SIZE="12"><B>Passo 09: Calcular o Parâmetro Indicador de Performance</B></FONT>
+        </TD></TR>
+        <TR><TD WIDTH="400" HEIGHT="20" ALIGN="CENTER" VALIGN="MIDDLE">Obter NUS e NMD para cada configuração geométrica do Espaço de Busca</TD></TR>
+    </TABLE>
+    >]
+
+    "Passo10" [label=< 
+    <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+        <TR><TD COLSPAN="1" CELLPADDING="4" ALIGN="CENTER" BGCOLOR="#1b563f">
+            <FONT FACE="Roboto" COLOR="white" POINT-SIZE="12"><B>Passo 10: Realizar a Avaliação Geométrica</B></FONT>
+        </TD></TR>
+        <TR><TD WIDTH="400" HEIGHT="20" ALIGN="CENTER" VALIGN="MIDDLE">Analisar o efeito de cada GDL em cada Parâmetro Indicador de Performance</TD></TR>
+    </TABLE>
+    >]
+
+    "Passo11" [label=< 
+    <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+        <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER" BGCOLOR="#1b563f">
+            <FONT FACE="Roboto" COLOR="white" POINT-SIZE="12"><B>Passo 11: Definir as melhores geometrias</B></FONT>
+        </TD></TR>
+        <TR><TD WIDTH="350" HEIGHT="20" ALIGN="CENTER" VALIGN="MIDDLE">Geometrias que maximizam NUS</TD></TR>
+        <TR><TD WIDTH="350" HEIGHT="20" ALIGN="CENTER" VALIGN="MIDDLE">Geometrias que minimizam NMD</TD></TR>
+    </TABLE>
+    >]
+
+    "Fim" [label=< 
+        <TABLE BGCOLOR="white" BORDER="1" CELLBORDER="0" CELLSPACING="0">
+            <TR><TD COLSPAN="2" CELLPADDING="4" ALIGN="CENTER" BGCOLOR="#666666">
+                <FONT FACE="Roboto" COLOR="white" POINT-SIZE="12"><B>Fim</B></FONT>
+            </TD></TR>
+            <TR><TD WIDTH="200" HEIGHT="20" ALIGN="CENTER" VALIGN="MIDDLE">Aplicação do Design Construtal</TD></TR>
+        </TABLE>
+    >]
+
+    "Inicio" -> "Passo01"
+
+    "Passo01" -> "Passo02"
+
+    "Passo02" -> "Passo03"
+
+    "Passo03" -> "Passo04"
+
+    "Passo04" -> "Passo05"
+
+    "Passo05" -> "Passo06"
+
+    "Passo06" -> "Passo07"
+
+    "Passo07" -> "Passo08" 
+    
+    "Passo08" -> "Passo09"
+
+    "Passo09" -> "Passo10"
+
+    "Passo10" -> "Passo11"
+
+    "Passo11" -> "Fim"
+}

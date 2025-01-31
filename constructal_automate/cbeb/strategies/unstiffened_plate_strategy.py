@@ -49,35 +49,44 @@ ELASTIC_BUCKLING_APPLIED_LOAD = 1
 class UnstiffenedPlateStrategy(PlateStrategy):
 
     def define_element_type_section_and_material(self, mapdl, E, poisson_ratio, t_1, t_s):
+
+        # Pré-Processamento
         mapdl.prep7()
         mapdl.run("/GO")
 
-        # Parâmetros de discretização
-        # # Elemento Finito
+        ## Definição do elemento
         mapdl.et(1, "SHELL281")
 
-        # # Material
+        ## Definição do material
         mapdl.mptemp("", "", "")
         mapdl.mptemp(1, 0)
         mapdl.mpdata("EX", 1, "", E)
         mapdl.mpdata("PRXY", 1, "", poisson_ratio)
 
-        # Seções
-        # # Seção da placa
+        ## Definição das seções
+        ### Seção da placa
         mapdl.run("sect,1,shell")
-        mapdl.secdata(t_1, 1, 0, 3)
+        mapdl.secdata(t_1, 1, 0, 5)
         mapdl.secoffset("MID")
-        mapdl.seccontrol("", "", "", "", "", "")
+        mapdl.seccontrol(0, 0, 0, 0, 1, 1, 1)
 
-    def define_geometry(self, mapdl, a, b, N_ts, N_ls, h_s):
+    def define_geometry(self, mapdl, a, b, t_1, N_ts, N_ls, h_s):
+        ## Geometria
+        ### Placa
+        #### Criação da área
         mapdl.rectng(x1=0, x2=a, y1=0, y2=b)
         mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.mshape(0, "2D")
-        mapdl.mshkey(0)
         mapdl.cm(PLACA_POS_APTN, "AREA")
 
     def define_discretization(self, mapdl, mesh_size, stiffened_plate_analysis):
+
+        ## Meshing
+        ### Definição do contexto de meshing
         mapdl.allsel(labt="ALL", entity="ALL")
+        mapdl.mshape(0, "2D")
+        mapdl.mshkey(0)
+
+        ### Meshing da placa
         mapdl.type(1)
         mapdl.mat(1)
         mapdl.run("REAL")
@@ -85,14 +94,26 @@ class UnstiffenedPlateStrategy(PlateStrategy):
         mapdl.secnum(1)
         mapdl.aesize(PLACA_POS_APTN, mesh_size)
         mapdl.amesh(PLACA_POS_APTN)
+
+        ### Contagem do total de elementos
         num_elem = mapdl.get('NELEM', 'ELEM', '', 'count')
+
         stiffened_plate_analysis.num_elem = num_elem
         stiffened_plate_analysis.save()
 
+        ## Encerrar /PREP7
+        mapdl.finish()
+
     def define_components_and_apply_boundary_conditions(self, mapdl, a, b, t_1):
+        # Entrar no /SOLU (Solution)
         mapdl.slashsolu()
+
+        mapdl.antype(antype="STATIC")
         mapdl.pstres(1)
 
+        ## Criação dos componentes para aplicação das condições de contorno
+        ### Placa
+        #### Componente do KP Inferior Esquerdo:
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.cmsel("S", PLACA_POS_APTN)
         mapdl.lsla("S")
@@ -100,22 +121,8 @@ class UnstiffenedPlateStrategy(PlateStrategy):
         mapdl.ksel("S", "LOC", "X", 0)
         mapdl.ksel("R", "LOC", "Y", 0)
         mapdl.cm(KP_INFERIOR_ESQUERDO, "KP")
-        mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.dk(KP_INFERIOR_ESQUERDO, "UX", 0)
-        mapdl.dk(KP_INFERIOR_ESQUERDO, "UY", 0)
 
-        # Selecionar KP Superior Esquerdo
-        mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.cmsel("S", PLACA_POS_APTN)
-        mapdl.lsla("S")
-        mapdl.ksll("S")
-        mapdl.ksel("S", "LOC", "X", 0)
-        mapdl.ksel("R", "LOC", "Y", b)
-        mapdl.cm(KP_SUPERIOR_ESQUERDO, "KP")
-        mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.dk(KP_SUPERIOR_ESQUERDO, "UX", 0)
-
-        # Selecionar KP Inferior Direito
+        #### Componente do KP Superior Direito
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.cmsel("S", PLACA_POS_APTN)
         mapdl.lsla("S")
@@ -123,55 +130,64 @@ class UnstiffenedPlateStrategy(PlateStrategy):
         mapdl.ksel("S", "LOC", "X", a)
         mapdl.ksel("R", "LOC", "Y", 0)
         mapdl.cm(KP_INFERIOR_DIREITO, "KP")
-        mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.dk(KP_INFERIOR_DIREITO, "UY", 0)
+        # mapdl.ksel("R", "LOC", "Y", b)
+        # mapdl.cm(KP_SUPERIOR_DIREITO, "KP")
 
-        # Adicionando componentes da placa
-        # # Contorno da placa inteira
+        #### Componente das linhas do contorno da placa
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.cmsel("S", PLACA_POS_APTN)
         mapdl.lsla("S")
         mapdl.cm(LINES_CONTORNO_PLACA, "LINE")
 
-        # # Direção Longitudinal
-        # ## Borda esquerda
+        #### Componente das linhas da borda esquerda da placa (X = 0)
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "X", 0)
         mapdl.cm(LINES_CONTORNO_PLACA_ESQUERDA, "LINE")
 
-        # ## Borda direita
+        #### Componente das linhas da borda direita da placa (X = A)
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "X", a)
         mapdl.cm(LINES_CONTORNO_PLACA_DIREITA, "LINE")
 
+        #### Componente do agrupamento das linhas das bordas transversais da placa
         mapdl.cmgrp(aname=LINES_CONTORNO_PLACA_TS,
                     cnam1=LINES_CONTORNO_PLACA_ESQUERDA,
                     cnam2=LINES_CONTORNO_PLACA_DIREITA)
 
-        # # Direção Longitudinal
-        # ## Borda inferior
+        #### Componente das linhas da borda inferior da placa (Y = 0)
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "Y", 0)
         mapdl.cm(LINES_CONTORNO_PLACA_INFERIOR, "LINE")
 
-        # ## Borda superior
+        #### Componente das linhas da borda superior da placa  (Y = B)
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.cmsel("S", LINES_CONTORNO_PLACA)
         mapdl.lsel("R", "LOC", "Y", b)
         mapdl.cm(LINES_CONTORNO_PLACA_SUPERIOR, "LINE")
 
-        # ## Bordas paralelas aos enrijecedores longitudinais
+        #### Componente do agrupamento das linhas das bordas longitudinais da placa
         mapdl.cmgrp(aname=LINES_CONTORNO_PLACA_LS,
                     cnam1=LINES_CONTORNO_PLACA_INFERIOR,
                     cnam2=LINES_CONTORNO_PLACA_SUPERIOR)
+        
 
-        # Aplicar BCs de translação ao longo de z das linhas da placa
+        ## Aplicação das condições de contorno
+
+        ### Deslocamento
+        #### KPs
+        mapdl.allsel(labt="ALL", entity="ALL")
+        mapdl.dk(KP_INFERIOR_ESQUERDO, "UX", 0)
+        mapdl.dk(KP_INFERIOR_ESQUERDO, "UY", 0)
+        # mapdl.dk(KP_SUPERIOR_DIREITO, "UY", 0)
+        mapdl.dk(KP_INFERIOR_DIREITO, "UY", 0)
+
+        #### Linhas
+        ##### Placa
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dl(LINES_CONTORNO_PLACA, "", "UZ", 0)
-        # mapdl.dl(LINES_CONTORNO_PLACA, "", "ROTZ", 0)
         mapdl.finish()
 
     def apply_load_for_elastic_buckling(self, mapdl, buckling_load_type):
@@ -182,23 +198,15 @@ class UnstiffenedPlateStrategy(PlateStrategy):
         else:
             mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
 
-    # def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_eq_ts, t_eq_ls):
     def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_1):
-        # p_u_ts = round(material.yielding_stress*t_eq_ts, 2)
-        p_u_ts = round(material.yielding_stress*t_1, 2)
-
-        if self.is_biaxial_buckling(buckling_load_type):
-            # p_u_ls = round(material.yielding_stress*t_eq_ls, 2)
-            p_u_ls = round(material.yielding_stress*t_1, 2)
-        else:
-            p_u_ls = 0
+        p_u = round(material.yielding_stress*t_1, 2)
             
         if self.is_biaxial_buckling(buckling_load_type):
-            mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u_ts)
-            mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", p_u_ls)
+            mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u)
+            mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", p_u)
         else:
-            mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u_ts)
-        return p_u_ts, p_u_ls
+            mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u)
+        return p_u
 
     def is_biaxial_buckling(self, buckling_load_type):
         return buckling_load_type == '2A'

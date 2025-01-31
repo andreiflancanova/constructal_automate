@@ -41,6 +41,6 @@ class PlateViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, pk=None):
         queryset = Plate.objects.all()
-        my_model = get_object_or_404(queryset, pk=pk)
-        my_model.delete()
+        plate = get_object_or_404(queryset, pk=pk)
+        plate.delete()
         return Response(status=204)

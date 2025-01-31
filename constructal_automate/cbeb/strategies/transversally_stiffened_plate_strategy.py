@@ -117,19 +117,16 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
 
         #### Criação do componente
         mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.cmsel("U", ENRIJECEDORES_LONGITUDINAIS_PRE_APTN)
         mapdl.cmsel("U", ENRIJECEDORES_TRANSVERSAIS_PRE_APTN)
         mapdl.cm(PLACA_PRE_APTN, "AREA")
 
         ### Agrupamento dos componentes para aplicação do APTN
         mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.cmsel("S", ENRIJECEDORES_LONGITUDINAIS_PRE_APTN)
-        mapdl.cmsel("A", ENRIJECEDORES_TRANSVERSAIS_PRE_APTN)
+        mapdl.cmsel("S", ENRIJECEDORES_TRANSVERSAIS_PRE_APTN)
         mapdl.cmsel("A", PLACA_PRE_APTN)
         mapdl.cmgrp(aname=CONJUNTO_PRE_APTN,
-                    cnam1=ENRIJECEDORES_LONGITUDINAIS_PRE_APTN,
-                    cnam2=ENRIJECEDORES_TRANSVERSAIS_PRE_APTN,
-                    cnam3=PLACA_PRE_APTN)
+                    cnam1=ENRIJECEDORES_TRANSVERSAIS_PRE_APTN,
+                    cnam2=PLACA_PRE_APTN)
         
         ### Aplicação do APTN (Area Partition)
         mapdl.aptn(na1="ALL")
@@ -139,14 +136,6 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.asel("S", "LOC", "Z", round(-0.5*float(t_1), 1), round(0.5*float(t_1)), 1)
         mapdl.cm(PLACA_POS_APTN, "AREA")
-
-        #### Enrijecedores Longitudinais
-        mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.asel("S", "LOC", "X", round(OFFSET_PERCENTUAL_BORDA_INICIAL*float(a_ts), 1), round(OFFSET_PERCENTUAL_BORDA_FINAL*float(a_ts), 1))
-        for i in range(N_ts):
-            mapdl.asel("A", "LOC", "X", round(((i+1)+OFFSET_PERCENTUAL_BORDA_INICIAL)*float(a_ts), 1), round(((i+1)+OFFSET_PERCENTUAL_BORDA_FINAL)*float(a_ts), 1))
-        mapdl.asel("R", "LOC", "Z", round(OFFSET_PERCENTUAL_Z_INICIAL*float(h_s), 1), round(OFFSET_PERCENTUAL_Z_FINAL*float(h_s), 1))
-        mapdl.cm(ENRIJECEDORES_LONGITUDINAIS_POS_APTN, "AREA")
 
         #### Enrijecedores Transversais
         mapdl.allsel(labt="ALL", entity="ALL")
@@ -159,12 +148,7 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
         ### Agrupamento dos enrijecedores para execução do AGLUE ("colar" faces comuns)
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.cmgrp(aname=ENRIJECEDORES_POS_APTN,
-            cnam1=ENRIJECEDORES_LONGITUDINAIS_POS_APTN,
-            cnam2=ENRIJECEDORES_TRANSVERSAIS_POS_APTN)
-
-        ### Aplicação do AGLUE nos enrijecedores
-        mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.aglue(na1=ENRIJECEDORES_POS_APTN)
+            cnam1=ENRIJECEDORES_TRANSVERSAIS_POS_APTN)
 
         ### Agrupamento da placa com os enrijecedores para execução do AGLUE ("colar" faces comuns)
         mapdl.cmgrp(aname=CONJUNTO_POS_APTN,
@@ -205,14 +189,6 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
         mapdl.aesize(ENRIJECEDORES_TRANSVERSAIS_POS_APTN, mesh_size)
         mapdl.amesh(ENRIJECEDORES_TRANSVERSAIS_POS_APTN)
 
-        ### Meshing dos enrijecedores longitudinais
-        mapdl.type(1)
-        mapdl.mat(1)
-        mapdl.run("REAL")
-        mapdl.esys(0)
-        mapdl.secnum(2)
-        mapdl.aesize(ENRIJECEDORES_LONGITUDINAIS_POS_APTN, mesh_size)
-        mapdl.amesh(ENRIJECEDORES_LONGITUDINAIS_POS_APTN)
 
         ### Aplicação do NUMMRG para mergear entidades comuns que existem por conta da sobreposição
         mapdl.allsel(labt="ALL", entity="ALL")
@@ -253,8 +229,10 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
         mapdl.lsla("S")
         mapdl.ksll("S")
         mapdl.ksel("S", "LOC", "X", a)
-        mapdl.ksel("R", "LOC", "Y", b)
-        mapdl.cm(KP_SUPERIOR_DIREITO, "KP")
+        # mapdl.ksel("R", "LOC", "Y", b)
+        # mapdl.cm(KP_SUPERIOR_DIREITO, "KP")
+        mapdl.ksel("R", "LOC", "Y", 0)
+        mapdl.cm(KP_INFERIOR_DIREITO, "KP")
 
         #### Componente das linhas do contorno da placa
         mapdl.allsel(labt="ALL", entity="ALL")
@@ -323,30 +301,9 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
                     cnam1=LINES_BORDA_TS_INFERIOR,
                     cnam2=LINES_BORDA_TS_SUPERIOR)
 
-        ### Enrijecedores Longitudinais
-        #### Componente das linhas da borda esquerda dos enrijecedores longitudinais (X = 0)
-        mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.cmsel("S", ENRIJECEDORES_LONGITUDINAIS_POS_APTN)
-        mapdl.lsla("S")
-        mapdl.lsel("R", "LOC", "X", 0)
-        mapdl.cm(LINES_BORDA_LS_ESQUERDA, "LINE")
-
-        #### Componente das linhas da borda esquerda dos enrijecedores longitudinais (X = A)
-        mapdl.allsel(labt="ALL", entity="ALL")
-        mapdl.cmsel("S", ENRIJECEDORES_LONGITUDINAIS_POS_APTN)
-        mapdl.lsla("S")
-        mapdl.lsel("R", "LOC", "X", a)
-        mapdl.cm(LINES_BORDA_LS_DIREITA, "LINE")
-
-        #### Componente do agrupamento das linhas das bordas dos enrijecedores longitudinais
-        mapdl.cmgrp(aname=LINES_BORDA_LS,
-                    cnam1=LINES_BORDA_LS_ESQUERDA,
-                    cnam2=LINES_BORDA_LS_DIREITA)
-
         #### Componente do agrupamento das linhas das bordas dos enrijecedores
         mapdl.cmgrp(aname=LINES_BORDA_ENRIJECEDORES,
-                    cnam1=LINES_BORDA_TS,
-                    cnam2=LINES_BORDA_LS)
+                    cnam1=LINES_BORDA_TS)
 
         ## Aplicação das condições de contorno
 
@@ -355,52 +312,41 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dk(KP_INFERIOR_ESQUERDO, "UX", 0)
         mapdl.dk(KP_INFERIOR_ESQUERDO, "UY", 0)
-        mapdl.dk(KP_SUPERIOR_DIREITO, "UY", 0)
+        # mapdl.dk(KP_SUPERIOR_DIREITO, "UY", 0)
+        mapdl.dk(KP_INFERIOR_DIREITO, "UY", 0)
 
         #### Linhas
         ##### Placa
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dl(LINES_CONTORNO_PLACA, "", "UZ", 0)
-        mapdl.dl(LINES_CONTORNO_PLACA, "", "ROTZ", 0)
 
 
         ##### Enrijecedores
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dl(LINES_BORDA_ENRIJECEDORES, "", "UZ", 0)
-        mapdl.dl(LINES_BORDA_ENRIJECEDORES, "", "ROTZ", 0)
 
     def apply_load_for_elastic_buckling(self, mapdl, buckling_load_type):
+        
         ### Cargas de Superficie
         mapdl.allsel(labt="ALL", entity="ALL")
         if self.is_biaxial_buckling(buckling_load_type):
             mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
             mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
-            mapdl.sfl(LINES_BORDA_LS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
             mapdl.sfl(LINES_BORDA_TS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
         else:
             mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
-            mapdl.sfl(LINES_BORDA_LS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
 
-    def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_eq_ts, t_eq_ls):
-    # def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_1):
-        p_u_ts = round(material.yielding_stress*t_eq_ts, 2)
-        # p_u_ts = round(material.yielding_stress*t_1, 2)
+    def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_1):
 
-        if self.is_biaxial_buckling(buckling_load_type):
-            p_u_ls = round(material.yielding_stress*t_eq_ls, 2)
-            # p_u_ls = round(material.yielding_stress*t_1, 2)
-        else:
-            p_u_ls = 0
+        p_u = round(material.yielding_stress*t_1, 2)
             
         if self.is_biaxial_buckling(buckling_load_type):
-            mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u_ts)
-            mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", p_u_ls)
-            mapdl.sfl(LINES_BORDA_LS, "PRESS", p_u_ts)
-            mapdl.sfl(LINES_BORDA_TS, "PRESS", p_u_ls)
+            mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u)
+            mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", p_u)
+            mapdl.sfl(LINES_BORDA_TS, "PRESS", p_u)
         else:
-            mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u_ts)
-            mapdl.sfl(LINES_BORDA_LS, "PRESS", p_u_ts)
-        return p_u_ts, p_u_ls
+            mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u)
+        return p_u
 
     def is_biaxial_buckling(self, buckling_load_type):
         return buckling_load_type == '2A'

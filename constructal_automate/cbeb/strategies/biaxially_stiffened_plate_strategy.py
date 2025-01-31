@@ -258,7 +258,8 @@ class BiaxiallyStiffenedPlateStrategy(PlateStrategy):
     def define_components_and_apply_boundary_conditions(self, mapdl, a, b, t_1):
         # Entrar no /SOLU (Solution)
         mapdl.slashsolu()
-        # mapdl.run("ANTYPE,0")
+
+        
         mapdl.antype(antype="STATIC")
         mapdl.pstres(1)
 
@@ -279,8 +280,10 @@ class BiaxiallyStiffenedPlateStrategy(PlateStrategy):
         mapdl.lsla("S")
         mapdl.ksll("S")
         mapdl.ksel("S", "LOC", "X", a)
-        mapdl.ksel("R", "LOC", "Y", b)
-        mapdl.cm(KP_SUPERIOR_DIREITO, "KP")
+        mapdl.ksel("R", "LOC", "Y", 0)
+        mapdl.cm(KP_INFERIOR_DIREITO, "KP")
+        # mapdl.ksel("R", "LOC", "Y", b)
+        # mapdl.cm(KP_SUPERIOR_DIREITO, "KP")
 
         #### Componente das linhas do contorno da placa
         mapdl.allsel(labt="ALL", entity="ALL")
@@ -381,19 +384,18 @@ class BiaxiallyStiffenedPlateStrategy(PlateStrategy):
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dk(KP_INFERIOR_ESQUERDO, "UX", 0)
         mapdl.dk(KP_INFERIOR_ESQUERDO, "UY", 0)
-        mapdl.dk(KP_SUPERIOR_DIREITO, "UY", 0)
+        # mapdl.dk(KP_SUPERIOR_DIREITO, "UY", 0)
+        mapdl.dk(KP_INFERIOR_DIREITO, "UY", 0)
 
         #### Linhas
         ##### Placa
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dl(LINES_CONTORNO_PLACA, "", "UZ", 0)
-        mapdl.dl(LINES_CONTORNO_PLACA, "", "ROTZ", 0)
 
 
         ##### Enrijecedores
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dl(LINES_BORDA_ENRIJECEDORES, "", "UZ", 0)
-        mapdl.dl(LINES_BORDA_ENRIJECEDORES, "", "ROTZ", 0)
 
     def apply_load_for_elastic_buckling(self, mapdl, buckling_load_type):
         ### Cargas de Superficie
@@ -407,26 +409,19 @@ class BiaxiallyStiffenedPlateStrategy(PlateStrategy):
             mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
             mapdl.sfl(LINES_BORDA_LS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
 
-    def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_eq_ts, t_eq_ls):
-    # def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_1):
-        p_u_ts = round(material.yielding_stress*t_eq_ts, 2)
-        # p_u_ts = round(material.yielding_stress*t_1, 2)
+    def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_1):
+
+        p_u = round(material.yielding_stress*t_1, 2)
 
         if self.is_biaxial_buckling(buckling_load_type):
-            p_u_ls = round(material.yielding_stress*t_eq_ls, 2)
-            # p_u_ls = round(material.yielding_stress*t_1, 2)
+            mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u)
+            mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", p_u)
+            mapdl.sfl(LINES_BORDA_LS, "PRESS", p_u)
+            mapdl.sfl(LINES_BORDA_TS, "PRESS", p_u)
         else:
-            p_u_ls = 0
-            
-        if self.is_biaxial_buckling(buckling_load_type):
-            mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u_ts)
-            mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", p_u_ls)
-            mapdl.sfl(LINES_BORDA_LS, "PRESS", p_u_ts)
-            mapdl.sfl(LINES_BORDA_TS, "PRESS", p_u_ls)
-        else:
-            mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u_ts)
-            mapdl.sfl(LINES_BORDA_LS, "PRESS", p_u_ts)
-        return p_u_ts, p_u_ls
+            mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", p_u)
+            mapdl.sfl(LINES_BORDA_LS, "PRESS", p_u)
+        return p_u
 
     def is_biaxial_buckling(self, buckling_load_type):
         return buckling_load_type == '2A'

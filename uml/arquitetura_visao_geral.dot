@@ -1,0 +1,27 @@
+digraph architecture {
+    rankdir=LR; // Layout da esquerda para a direita
+    fontsize=10;
+    splines=ortho; // Linhas perpendiculares
+    node [shape=box, fontname="Roboto", fontsize=10];
+    edge [fontname="Roboto", fontsize=10];
+
+    // Cluster do Docker
+    subgraph cluster_docker {
+        label="Containers Docker";
+		fontname="Roboto";
+        fontsize=12;
+        style=dashed;
+        color=blue; // Cor do contorno
+        fontcolor=blue; // Cor do título
+
+        api [label="API REST\n(DRF)", shape=component];
+        database [label="Banco de Dados\n(MariaDB)", shape=cylinder];
+    }
+
+    // Instância do ANSYS
+    ansys [label="ANSYS \nMechanical APDL", shape=box3d];
+
+    // Conexões
+    api -> database [label="Persistência/\nConsulta de dados", labeldistance=0, labelangle=-45, arrowhead="normal", dir=both];
+    api -> ansys [label="Envio/Retorno\nde dados (gRPC) ", labeldistance=0, labelangle=0, arrowhead="normal", dir=both];
+}

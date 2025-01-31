@@ -9,6 +9,17 @@ class ElasticBucklingViewSet(viewsets.ModelViewSet):
     queryset = ElasticBuckling.objects.all()
     serializer_class = ElasticBucklingSerializer
 
+    def list(self, request):
+        queryset = ElasticBuckling.objects.all()
+        serializer = ElasticBucklingSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def retrieve(self, request, pk=None):
+        queryset = ElasticBuckling.objects.all()
+        stiffened_plate = get_object_or_404(queryset, pk=pk)
+        serializer = ElasticBucklingSerializer(stiffened_plate)
+        return Response(serializer.data)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

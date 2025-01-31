@@ -54,6 +54,37 @@ class StiffenedPlateAnalysisService():
     def __init__(self, strategy: PlateStrategy):
         self.strategy = strategy
 
+    def format_field(self, value, decimal_places):
+        # Formata o número com as casas decimais especificadas
+        formatted_value = f"{value:.{decimal_places}f}"
+        
+        # Remove a parte decimal se for zero
+        if formatted_value.endswith("0" * decimal_places):
+            return formatted_value.split(".")[0]
+        else:
+            return formatted_value.rstrip("0").rstrip(".")
+        
+    def format_filename(self, filename):
+        # Define os pontos onde os underscores serão inseridos
+        insertion_points = ["k", "MS", "SP"]
+        
+        # Se o comprimento do nome for menor que 32 caracteres, adiciona os underscores
+        if len(filename) < 32:
+            remaining_chars = 32 - len(filename)
+            
+            # Verifica se há espaço suficiente para inserir os underscores
+            if remaining_chars >= 3:
+                offset = 0  # Deslocamento causado pela inserção de underscores
+                for point in insertion_points:
+                    index = filename.find(point)
+                    # Insere o underscore antes do ponto de inserção e atualiza o filename
+                    if index != -1:
+                        filename = filename[:index + offset] + "_" + filename[index + offset:]
+                        # offset += 1  # Atualiza o deslocamento para a próxima inserção
+                    
+        # Garante que o nome final não exceda 32 caracteres
+        return filename[:32]
+
     def create(self,
                stiffened_plate_analysis: StiffenedPlateAnalysis,
                stiffened_plate: StiffenedPlate,
@@ -62,19 +93,21 @@ class StiffenedPlateAnalysisService():
 
         a = stiffened_plate.plate.a
         b = stiffened_plate.plate.b
-        id = stiffened_plate.id
+        stiffened_plate_id = stiffened_plate.id
         E = material.young_modulus
         poisson_ratio = material.poisson_ratio
         t_1 = stiffened_plate.t_1
         t_s = stiffened_plate.t_s
         h_s = float(stiffened_plate.h_s) + float(t_1)*0.5
-        phi = stiffened_plate.phi
-        k = stiffened_plate.k
+        phi = self.format_field(stiffened_plate.phi, 2)
+        k = self.format_field(stiffened_plate.k, 3)
         N_ts = stiffened_plate.N_ts
         N_ls = stiffened_plate.N_ls
-        mesh_size = stiffened_plate_analysis.mesh_size
+        mesh_size = self.format_field(stiffened_plate_analysis.mesh_size, 1)
+        buckling_load_type = stiffened_plate_analysis.buckling_load_type.id
+        material_id = stiffened_plate_analysis.material.id
 
-        analysis_name = f'F{phi:.1f}_L{N_ls}_T{N_ts}_k{k:.3f}_SP{id}'
+        analysis_name = self.format_filename(f'BL{buckling_load_type}M{material_id}P{phi}L{N_ls}T{N_ts}k{k}MS{mesh_size}SP{stiffened_plate_id}')
         self.create_dir_structure(stiffened_plate_analysis.case_study, analysis_name)
 
         analysis_cwd_path = f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH}/{stiffened_plate_analysis.case_study}/{analysis_name}'
@@ -140,7 +173,6 @@ class StiffenedPlateAnalysisService():
             mapdl.cwd(analysis_cwd_path)
             mapdl.filname(fname=analysis_name, key=1)
             mapdl.title(analysis_name)
-            mapdl.save(slab='ALL')
         finally:
             stiffened_plate_analysis.analysis_dir_path = analysis_cwd_path
             stiffened_plate_analysis.analysis_lgw_file_path = analysis_log_path
