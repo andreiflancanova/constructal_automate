@@ -24,5 +24,4 @@ class PlateStrategy(ABC):
 
     @abstractmethod
     def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_1):
-    # def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_eq_ts, t_eq_ls):
         pass

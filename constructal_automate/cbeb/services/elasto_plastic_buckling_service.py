@@ -181,7 +181,6 @@ class ElastoPlasticBucklingService():
             z_deflection = abs_negative_z_deflection
         else:
             z_deflection = positive_z_deflection
-        print('Andrei! w_max = ', z_deflection)
         return z_deflection
 
     def plot_images(self, mapdl, analysis_db_path, material_yielding_stress):
