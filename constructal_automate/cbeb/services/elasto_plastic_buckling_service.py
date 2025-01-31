@@ -19,6 +19,10 @@ CANCELLED_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Cancelled')
 MAPDL_RUN_LOCATION = os.getenv('MAPDL_RUN_LOCATION')
 MAPDL_START_TIMEOUT = int(os.getenv('MAPDL_START_TIMEOUT', 30))
 
+NSUBST_NSBSTP = 200
+NSUBST_NSBMX = 400
+NSUBST_NSBMN = 50
+
 class ElastoPlasticBucklingService():
 
     def __init__(self, strategy: PlateStrategy):
@@ -73,9 +77,9 @@ class ElastoPlasticBucklingService():
                     remove_temp_files=True,
                     cleanup_on_exit=True,
                 )
-            n_u, sigma_u = self.calc_ultimate_buckling_load_and_stress(mapdl, t_1)
-            w_max = self.calc_z_deflection(mapdl)
-            von_mises_dist_img_path, w_dist_img_path = self.plot_images(mapdl, analysis_db_path, material.yielding_stress)
+            n_u, sigma_u = self.calc_ultimate_buckling_load_and_stress(mapdl, t_1, p_u)
+            w_max = self.calc_z_deflection(mapdl, p_u)
+            von_mises_dist_img_path, w_dist_img_path = self.plot_images(mapdl, analysis_db_path, material.yielding_stress, p_u)
             mapdl.finish()
             mapdl._close_apdl_log()
             stiffened_plate_analysis.elasto_plastic_buckling_status = COMPLETED_PROCESSING_STATUS
@@ -140,7 +144,7 @@ class ElastoPlasticBucklingService():
         mapdl.pred(sskey="OFF")
 
         ## Definir o número de sub-passos a serem utilizados para o Passo de Carga atual
-        mapdl.nsubst(200, 400, 50)
+        mapdl.nsubst(NSUBST_NSBSTP, NSUBST_NSBMX, NSUBST_NSBMN)
 
         ## Limpar os dados de solução salvos no DB do ANSYS para salvar os resultados dos sub-passos na análise de flambagem elasto-plástica
         mapdl.outres("ERASE")
@@ -161,17 +165,36 @@ class ElastoPlasticBucklingService():
             print("An error occurred, but the analysis will try to continue")
         mapdl.finish()
 
-    def calc_ultimate_buckling_load_and_stress(self, mapdl, t_1):
+    def calc_ultimate_buckling_load_and_stress(self, mapdl, t_1, p_u):
         mapdl.post1()
 
-        n_u = mapdl.post_processing.frequency_values[len(mapdl.post_processing.frequency_values)-2]
+        position = self.calc_post_processing_frequency_values_arr_position_for_ultimate_load(mapdl, p_u)
+
+        n_u = mapdl.post_processing.frequency_values[position]
 
         sigma_u = n_u/float(t_1)
 
         return n_u, sigma_u
+    
+    def calc_post_processing_frequency_values_arr_position_for_ultimate_load(self, mapdl, p_u):
+        first_to_last_arr_position = len(mapdl.post_processing.frequency_values)-2
+        first_to_last_load = mapdl.post_processing.frequency_values[first_to_last_arr_position]
 
-    def calc_z_deflection(self, mapdl):
-        mapdl.set(lstep=1, sbstep=(len(mapdl.post_processing.frequency_values)-1))
+        second_to_last_arr_position = len(mapdl.post_processing.frequency_values)-3
+        second_to_last_load = mapdl.post_processing.frequency_values[second_to_last_arr_position]
+
+        diff_between_loads = first_to_last_load - second_to_last_load
+        load_increment = p_u/NSUBST_NSBMX
+
+        if diff_between_loads > load_increment:
+            return first_to_last_arr_position
+        else:
+            return second_to_last_arr_position
+
+
+    def calc_z_deflection(self, mapdl, p_u):
+        position = self.calc_post_processing_frequency_values_arr_position_for_substep(mapdl, p_u)
+        mapdl.set(lstep=1, sbstep=position)
         negative_z_deflection = min(mapdl.post_processing.nodal_displacement("Z"))
         abs_negative_z_deflection = abs(negative_z_deflection)
 
@@ -182,16 +205,21 @@ class ElastoPlasticBucklingService():
         else:
             z_deflection = positive_z_deflection
         return z_deflection
+    
+    def calc_post_processing_frequency_values_arr_position_for_substep(self, mapdl, p_u):
+        return self.calc_post_processing_frequency_values_arr_position_for_ultimate_load(mapdl, p_u) + 1
 
-    def plot_images(self, mapdl, analysis_db_path, material_yielding_stress):
+    def plot_images(self, mapdl, analysis_db_path, material_yielding_stress, p_u):
         VON_MISES_IMG_SUFFIX = '_von_mises_dist.png'
         W_IMG_SUFFIX = '_w_dist.png'
 
         von_mises_dist_img_path = analysis_db_path.replace('.db', VON_MISES_IMG_SUFFIX)
         w_dist_img_path = analysis_db_path.replace('.db', W_IMG_SUFFIX)
 
+        position = self.calc_post_processing_frequency_values_arr_position_for_ultimate_load(mapdl, p_u)
+
         mapdl.result.plot_principal_nodal_stress(
-            (len(mapdl.post_processing.frequency_values)-2),
+            position,
             "SEQV",
             lighting=False,
             cpos="iso",
@@ -221,7 +249,7 @@ class ElastoPlasticBucklingService():
         )
 
         mapdl.result.plot_principal_nodal_stress(
-            (len(mapdl.post_processing.frequency_values)-2),
+            position,
             "SEQV",
             lighting=False,
             cpos="iso",
@@ -251,7 +279,7 @@ class ElastoPlasticBucklingService():
         )
 
         mapdl.result.plot_nodal_displacement(
-            (len(mapdl.post_processing.frequency_values)-2),
+            position,
             "UZ",
             lighting=False,
             cpos="iso",
