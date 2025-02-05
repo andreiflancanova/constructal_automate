@@ -1,16 +1,16 @@
 services:
-  db:
+  ca-db:
+    container_name: ca-db
     image: mariadb:10.5
-    profiles:
-      - only-db
     volumes:
-      - constructal-automate-db-volume:/var/lib/mysql
+      - ca-db-vl:/var/lib/mysql
+      - ./scripts:/docker-entrypoint-initdb.d
     env_file:
       - ./environments/db/dev.env
     expose:
-      - 3306
+      - 3307
     ports:
-      - "3306:3306"
+      - "3307:3306"
     healthcheck:
       test: [ "CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized" ]
       start_period: 1m
@@ -19,10 +19,25 @@ services:
       timeout: 5s
       retries: 3
     networks:
-      - constructal-automate-network
+      - ca-nw
+  ca-app:
+    build:
+      context: .
+      dockerfile: Dockerfile.app
+    command: python manage.py runserver --noreload 0.0.0.0:8000
+    container_name: ca-app
+    volumes:
+      - ./constructal_automate/:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./environments/app/dev.env
+    depends_on:
+      - ca-db
+    networks:
+      - ca-nw
 volumes:
-  constructal-automate-db-volume:
-    # external: true
+  ca-db-vl:
 networks:
-  constructal-automate-network:
+  ca-nw:
     driver: bridge

@@ -114,3 +114,11 @@ pyreverse -o dot -p csg constructal_automate/csg
 ```bash
 dot -Tpdf classes_csg.dot -o classes_csg.pdf
 ```
+
+### Docker
+
+docker compose -p ca-press up -d ca-db
+
+docker-compose -p ca-press down
+
+ docker build -t ca-app -f Dockerfile.app .
