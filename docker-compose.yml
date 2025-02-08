@@ -4,11 +4,9 @@ services:
     image: mariadb:10.5
     volumes:
       - ca-db-vl:/var/lib/mysql
-      - ./scripts:/docker-entrypoint-initdb.d
+      - ./scripts/sql:/docker-entrypoint-initdb.d
     env_file:
       - ./environments/db/dev.env
-    expose:
-      - 3307
     ports:
       - "3307:3306"
     healthcheck:
@@ -26,8 +24,12 @@ services:
       dockerfile: Dockerfile.app
     command: python manage.py runserver --noreload 0.0.0.0:8000
     container_name: ca-app
+    # user: "${UID}:${GID}" 
     volumes:
       - ./constructal_automate/:/app
+      - "D:/constructal_automate_analysis_files:/mnt/data"
+      - ./scripts/bash:/mnt/scripts
+      # - "D:/constructal_automate_analysis_files/ansys_mapdl_tmp_dir:/mnt/ansys_mapdl_tmp_dir"
     ports:
       - "8000:8000"
     env_file:
@@ -40,4 +42,5 @@ volumes:
   ca-db-vl:
 networks:
   ca-nw:
+    name: ca-nw
     driver: bridge
