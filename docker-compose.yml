@@ -26,12 +26,10 @@ services:
       dockerfile: Dockerfile.app
     command: python manage.py runserver --noreload 0.0.0.0:8000
     container_name: ca-app
-    # user: "${UID}:${GID}" 
     volumes:
       - ./constructal_automate/:/app
       - "D:/constructal_automate_analysis_files:/mnt/data"
       - ./scripts/bash:/mnt/scripts
-      # - "D:/constructal_automate_analysis_files/ansys_mapdl_tmp_dir:/mnt/ansys_mapdl_tmp_dir"
     ports:
       - "8000:8000"
     env_file:
