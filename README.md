@@ -1,6 +1,52 @@
 # Constructal Automate
 
-## Configuração do Ambiente Virtual
+Projeto desenvolvido durante a dissertação de mestrado em Modelagem Computacional pela Universidade Federal do Rio Grande do acadêmico Andrei Ferreira Lançanova, com o intuito de automatizar os fluxos de modelagem computacional e simulação numérica do problema de flambagem elasto-plástica biaxial de placas com enrijecedores.
+
+## Subindo a Arquitetura na sua Máquina Local
+
+### Requisitos
+
+- **Git** instalado para clonar o repositório.
+- **Docker e Docker Compose** instalados para gerenciar os containers.
+- **PowerShell com privilégios de administrador** para iniciar o servidor GRPC do ANSYS MAPDL.
+
+### Passos para iniciar a arquitetura
+
+1. **Clonar o repositório**
+
+   ```bash
+   git clone https://github.com/andreiflancanova/constructal_automate
+   cd constructal_automate
+   ```
+
+2. **Subir os containers Docker**
+
+   ```bash
+   docker compose -p ca-press up --build --detach
+   ```
+
+3. **Iniciar o servidor GRPC do ANSYS MAPDL**
+
+   O servidor **GRPC do ANSYS MAPDL** deve ser iniciado na porta **50052** usando o **PowerShell** como administrador:
+
+   ```powershell
+   Start-Process "C:\Program Files\ANSYS Inc\ANSYS Student\v242\ansys\bin\winx64\ANSYS242.exe" `
+     -ArgumentList "-grpc -port 50052 -np 1 -dir `"D:\constructal_automate_analysis_files\ansys_mapdl_tmp_dir`"" `
+     -Verb RunAs
+   ```
+
+### Parando e Removendo os Containers Docker
+
+Caso precise parar e remover os containers Docker:
+
+```bash
+docker-compose -p ca-press down
+```
+
+
+## Dicas e Cuidados para Desenvolvedores
+
+### Configuração do Ambiente Virtual
 
 Para criar o ambiente virtual que será utilizado:
 
@@ -14,7 +60,7 @@ Para ativar o ambiente virtual:
 source "D:\01_Mestrando_Andrei_PPGMC_2022\python-env-dirs\constructal_automate\Scripts\activate"
 ```
 
-## Instalação das Dependências
+### Instalação das Dependências
 
 Para instalar as dependências do projeto, execute:
 
@@ -22,9 +68,9 @@ Para instalar as dependências do projeto, execute:
 pip install -r requirements.txt
 ```
 
-## Inicialização do Projeto Django
+### Inicialização do Projeto Django
 
-Para criar um novo projeto Django, execute:
+Para criar um novo projeto Django:
 
 ```bash
 django-admin startproject constructal_automate
@@ -36,9 +82,9 @@ Navegue até a pasta do projeto recém-criado:
 cd constructal_automate
 ```
 
-## Execução do Servidor de Desenvolvimento
+### Execução do Servidor de Desenvolvimento sem Docker
 
-Para iniciar o servidor de desenvolvimento do Django, execute:
+Caso prefira rodar o projeto localmente sem Docker, utilize o seguinte comando:
 
 ```bash
 python manage.py runserver --noreload
@@ -46,7 +92,7 @@ python manage.py runserver --noreload
 
 > **Nota:** A opção `--noreload` evita que o Django reinicie automaticamente quando arquivos do projeto são modificados, prevenindo possíveis interferências com a criação de conexões do `MapdlConnectionPool`.
 
-## Criação das Aplicações Django
+### Criação das Aplicações Django
 
 Para criar a aplicação **Calculate Stiffener Geometry (CSG)**:
 
@@ -60,7 +106,7 @@ Para criar a aplicação **Calculate Biaxial Elastic Buckling (CBEB)**:
 python manage.py startapp cbeb
 ```
 
-## Configuração do Banco de Dados
+### Configuração do Banco de Dados
 
 Para criar as migrations do banco de dados:
 
@@ -80,22 +126,7 @@ Para aplicar as migrations da aplicação **CSG**:
 python manage.py migrate csg
 ```
 
-## Ativação do Ambiente Virtual e Execução do Projeto
-
-Caso precise ativar novamente o ambiente virtual:
-
-```bash
-cd ../../python-env-dirs/
-source constructal-automate-dev01-0.68/Scripts/activate
-```
-
-Executar o projeto:
-
-```bash
-python manage.py runserver --noreload
-```
-
-## Geração de Diagramas com Graphviz
+### Geração de Diagramas com Graphviz
 
 Para gerar um arquivo **.dot** contendo a visão geral da arquitetura:
 
@@ -107,10 +138,6 @@ Para converter o arquivo **.dot** em **PDF**:
 
 ```bash
 dot -Tpdf uml/arquitetura_visao_geral.dot -o uml/arquitetura_visao_geral.pdf
-```
-
-```bash
-dot -Tpdf uml/fluxograma_estudo_caso_design_construtal.dot -o uml/fluxograma_estudo_caso_design_construtal.pdf
 ```
 
 Para gerar fluxogramas formatados em **LaTeX**:
@@ -147,23 +174,4 @@ pyreverse -o dot -p csg constructal_automate/csg
 dot -Tpdf classes_csg.dot -o classes_csg.pdf
 ```
 
-## Docker
-
-Para construir e executar os containers do projeto:
-
-```bash
-docker compose -p ca-press up --build --detach
-```
-
-Para parar e remover os containers:
-
-```bash
-docker-compose -p ca-press down
-```
-
-Para construir a imagem Docker da aplicação:
-
-```bash
-docker build -t ca-app -f Dockerfile.app .
-```
 
