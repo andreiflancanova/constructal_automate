@@ -9,6 +9,8 @@ services:
       - ./environments/db/dev.env
     ports:
       - "3307:3306"
+    expose:
+      - 3306
     healthcheck:
       test: [ "CMD", "healthcheck.sh", "--su-mysql", "--connect", "--innodb_initialized" ]
       start_period: 1m
