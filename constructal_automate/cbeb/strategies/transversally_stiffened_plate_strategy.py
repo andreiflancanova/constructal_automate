@@ -323,9 +323,10 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
         ##### Enrijecedores
         mapdl.allsel(labt="ALL", entity="ALL")
         mapdl.dl(LINES_BORDA_ENRIJECEDORES, "", "UZ", 0)
+        mapdl.finish()
 
     def apply_load_for_elastic_buckling(self, mapdl, buckling_load_type):
-        
+        mapdl.slashsolu()
         ### Cargas de Superficie
         mapdl.allsel(labt="ALL", entity="ALL")
         if self.is_biaxial_buckling(buckling_load_type):
@@ -334,9 +335,9 @@ class TransversallyStiffenedPlateStrategy(PlateStrategy):
             mapdl.sfl(LINES_BORDA_TS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
         else:
             mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
+        mapdl.finish()
 
     def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_1):
-
         p_u = round(material.yielding_stress*t_1, 2)
             
         if self.is_biaxial_buckling(buckling_load_type):
