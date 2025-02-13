@@ -6,8 +6,15 @@ from cbeb.strategies.plate_strategy import PlateStrategy
 from csg.models.stiffened_plate import StiffenedPlate
 from pathlib import Path
 from ansys.mapdl.core import launch_mapdl
+from ansys.mapdl.core.errors import MapdlConnectionError
 
-MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH = os.getenv('MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH')
+from rest_framework.exceptions import APIException
+
+MAPDL_OUTPUT_BASEDIR_ABSOLUTE_HOST_PATH = os.getenv('MAPDL_OUTPUT_BASEDIR_ABSOLUTE_HOST_PATH')
+MAPDL_OUTPUT_BASEDIR_ABSOLUTE_CONTAINER_PATH = os.getenv('MAPDL_OUTPUT_BASEDIR_ABSOLUTE_CONTAINER_PATH')
+MAPDL_GRPC_HOST = os.getenv('MAPDL_GRPC_HOST')
+MAPDL_GRPC_PORT = os.getenv('MAPDL_GRPC_PORT')
+MAPDL_LOG_LEVEL_STIFFENED_PLATE_ANALYSIS = os.getenv('MAPDL_LOG_LEVEL_STIFFENED_PLATE_ANALYSIS')
 
 ENRIJECEDOR_LONGITUDINAL_PRE_APTN = os.getenv('ENRIJECEDOR_LONGITUDINAL_PRE_APTN')
 ENRIJECEDOR_TRANSVERSAL_PRE_APTN = os.getenv('ENRIJECEDOR_TRANSVERSAL_PRE_APTN')
@@ -48,6 +55,7 @@ OFFSET_PERCENTUAL_Z_FINAL = 0.60
 
 MAPDL_RUN_LOCATION = os.getenv('MAPDL_RUN_LOCATION')
 MAPDL_START_TIMEOUT = int(os.getenv('MAPDL_START_TIMEOUT', 30))
+MAPDL_NUMBER_OF_PROCESSORS = os.getenv('MAPDL_NUMBER_OF_PROCESSORS')
 
 class StiffenedPlateAnalysisService():
 
@@ -110,41 +118,45 @@ class StiffenedPlateAnalysisService():
         analysis_name = self.format_filename(f'BL{buckling_load_type}M{material_id}P{phi}L{N_ls}T{N_ts}k{k}MS{mesh_size}SP{stiffened_plate_id}')
         self.create_dir_structure(stiffened_plate_analysis.case_study, analysis_name)
 
-        analysis_cwd_path = f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH}/{stiffened_plate_analysis.case_study}/{analysis_name}'
-        analysis_log_path = f'{analysis_cwd_path}/{analysis_name}.txt'
-
-
-        mapdl = launch_mapdl(
-            run_location=MAPDL_RUN_LOCATION,
-            nproc=4,
-            override=True,
-            loglevel="INFO",
-            start_timeout=MAPDL_START_TIMEOUT,
-            remove_temp_files=True,
-            cleanup_on_exit=True,
-        )
+        analysis_cwd_host_path = f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_HOST_PATH}/{stiffened_plate_analysis.case_study}/{analysis_name}'
+        analysis_log_host_path = f'{analysis_cwd_host_path}/{analysis_name}.txt'
+        analysis_log_container_path = f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_CONTAINER_PATH}/{stiffened_plate_analysis.case_study}/{analysis_name}/{analysis_name}.txt'
 
         try:
-            self.create_mapdl_initial_files(mapdl, analysis_name, analysis_cwd_path, analysis_log_path, stiffened_plate_analysis)
+            mapdl = launch_mapdl(
+                run_location=MAPDL_RUN_LOCATION,
+                ip=MAPDL_GRPC_HOST,
+                port=MAPDL_GRPC_PORT,
+                start_instance=False,
+                nproc=MAPDL_NUMBER_OF_PROCESSORS,
+                override=True,
+                loglevel=MAPDL_LOG_LEVEL_STIFFENED_PLATE_ANALYSIS,
+                remove_temp_files=True,
+                cleanup_on_exit=True
+            )
+        except MapdlConnectionError as e:
+            raise APIException(detail=str(e), code=500)
 
-            self.strategy.define_element_type_section_and_material(mapdl, E, poisson_ratio, t_1, t_s)
-            self.strategy.define_geometry(mapdl, a, b, t_1, N_ts, N_ls, h_s)
-            self.strategy.define_discretization(mapdl, mesh_size, stiffened_plate_analysis)
-            self.strategy.define_components_and_apply_boundary_conditions(mapdl, a, b, t_1)
+        # try:
+        self.create_mapdl_initial_files(mapdl, analysis_name, analysis_cwd_host_path, analysis_log_container_path, analysis_log_host_path, stiffened_plate_analysis)
 
-            mapdl.save(slab='ALL')
-            mapdl._close_apdl_log()
-        finally:
-            mapdl.exit()
+        self.strategy.define_element_type_section_and_material(mapdl, E, poisson_ratio, t_1, t_s)
+        self.strategy.define_geometry(mapdl, a, b, t_1, N_ts, N_ls, h_s)
+        self.strategy.define_discretization(mapdl, mesh_size, stiffened_plate_analysis)
+        self.strategy.define_components_and_apply_boundary_conditions(mapdl, a, b, t_1)
+
+        mapdl.save(slab='ALL')
+        stiffened_plate_analysis.save()
+        mapdl._close_apdl_log()
 
     def create_dir_structure(self, case_study_name, analysis_name):
 
-        self.ensure_dir_exists(MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH)
+        self.ensure_dir_exists(MAPDL_OUTPUT_BASEDIR_ABSOLUTE_CONTAINER_PATH)
 
-        case_study_dir_absolute_path = f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH}/{case_study_name}'
+        case_study_dir_absolute_path = f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_CONTAINER_PATH}/{case_study_name}'
         self.ensure_dir_exists(case_study_dir_absolute_path)
 
-        analysis_dir_absolute_path_string = f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH}/{case_study_name}/{analysis_name}'
+        analysis_dir_absolute_path_string = f'{MAPDL_OUTPUT_BASEDIR_ABSOLUTE_CONTAINER_PATH}/{case_study_name}/{analysis_name}'
         self.ensure_dir_exists(analysis_dir_absolute_path_string)
         self.remove_previous_analysis_files(analysis_dir_absolute_path_string)
 
@@ -166,16 +178,15 @@ class StiffenedPlateAnalysisService():
         else:
             print('No previous analysis files to remove.')
 
-    def create_mapdl_initial_files(self, mapdl, analysis_name, analysis_cwd_path, analysis_log_path, stiffened_plate_analysis):
+    def create_mapdl_initial_files(self, mapdl, analysis_name, analysis_cwd_host_path, analysis_log_container_path, analysis_log_host_path, stiffened_plate_analysis):
         try:
             mapdl.clear()
-            mapdl.open_apdl_log(filename=analysis_log_path, mode='a')
-            mapdl.cwd(analysis_cwd_path)
+            mapdl.open_apdl_log(filename=analysis_log_container_path, mode='a')
+            mapdl.cwd(analysis_cwd_host_path)
             mapdl.filname(fname=analysis_name, key=1)
             mapdl.title(analysis_name)
         finally:
-            stiffened_plate_analysis.analysis_dir_path = analysis_cwd_path
-            stiffened_plate_analysis.analysis_lgw_file_path = analysis_log_path
+            stiffened_plate_analysis.analysis_dir_path = analysis_cwd_host_path
+            stiffened_plate_analysis.analysis_lgw_file_path = analysis_log_host_path
             stiffened_plate_analysis.elastic_buckling_status = PENDING_PROCESSING_STATUS
             stiffened_plate_analysis.elasto_plastic_buckling_status = PENDING_PROCESSING_STATUS
-            stiffened_plate_analysis.save()
