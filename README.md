@@ -1,83 +1,109 @@
-### Constructal Automate
+# Constructal Automate
 
-Para criar o venv que você vai utilizar
+## Configuração do Ambiente Virtual
+
+Para criar o ambiente virtual que será utilizado:
 
 ```bash
 python -m venv constructal_automate
 ```
 
-Para utilizar o venv que você criou:
+Para ativar o ambiente virtual:
+
 ```bash
 source "D:\01_Mestrando_Andrei_PPGMC_2022\python-env-dirs\constructal_automate\Scripts\activate"
 ```
+
+## Instalação das Dependências
 
 Para instalar as dependências do projeto, execute:
 
 ```bash
 pip install -r requirements.txt
 ```
-Para dar o quickstart do projeto, execute:
+
+## Inicialização do Projeto Django
+
+Para criar um novo projeto Django, execute:
 
 ```bash
 django-admin startproject constructal_automate
 ```
 
+Navegue até a pasta do projeto recém-criado:
+
 ```bash
 cd constructal_automate
 ```
-Para executar o projeto 
+
+## Execução do Servidor de Desenvolvimento
+
+Para iniciar o servidor de desenvolvimento do Django, execute:
+
 ```bash
 python manage.py runserver --noreload
 ```
 
-Criar a app 'Calculate Stiffener Geometry'
+> **Nota:** A opção `--noreload` evita que o Django reinicie automaticamente quando arquivos do projeto são modificados, prevenindo possíveis interferências com a criação de conexões do `MapdlConnectionPool`.
+
+## Criação das Aplicações Django
+
+Para criar a aplicação **Calculate Stiffener Geometry (CSG)**:
+
 ```bash
 python manage.py startapp csg
 ```
 
-Criar a app 'Calculate Biaxial Elastic Buckling'
+Para criar a aplicação **Calculate Biaxial Elastic Buckling (CBEB)**:
+
 ```bash
 python manage.py startapp cbeb
 ```
 
-Criar as migrations do banco de dados
+## Configuração do Banco de Dados
+
+Para criar as migrations do banco de dados:
+
 ```bash
 python manage.py makemigrations
 ```
 
-OBS.: Lembrar de colocar cada model nova dentro de /models/__init__.py para o Django reconhecer, como no exemplo a seguir:
+> **Importante:** Cada novo model deve ser importado no arquivo `/models/__init__.py` para que o Django o reconheça. Exemplo:
+>
+> ```python
+> from .plate import Plate
+> ```
 
-```bash
-from .plate import Plate
-```
+Para aplicar as migrations da aplicação **CSG**:
 
-Executar a migração das tabelas da app csg
 ```bash
 python manage.py migrate csg
 ```
 
-Ativar o virtualenv
+## Ativação do Ambiente Virtual e Execução do Projeto
+
+Caso precise ativar novamente o ambiente virtual:
+
 ```bash
 cd ../../python-env-dirs/
 source constructal-automate-dev01-0.68/Scripts/activate
 ```
 
 Executar o projeto:
+
 ```bash
 python manage.py runserver --noreload
 ```
 
-OBS.: Durante a implementação do MapdlConnectionPool, foi identificado que durante a criação das conexões com o MAPDL, algum arquivo é criado ou atualizado no diretório do projeto, e isso faz com que o Django reinicie. É por este motivo que é necessário passar a flag --noreload, para que o Django não reinicie quando da alteração de arquivos.
+## Geração de Diagramas com Graphviz
 
-
-#### Graphviz
-Para usar arquivo dot seja gerado, execute:
+Para gerar um arquivo **.dot** contendo a visão geral da arquitetura:
 
 ```bash
 python manage.py graph_models -a --dot > uml/arquitetura_visao_geral.dot
 ```
 
-Para gerar o pdf do UML a partir do dot:
+Para converter o arquivo **.dot** em **PDF**:
 
 ```bash
 dot -Tpdf uml/arquitetura_visao_geral.dot -o uml/arquitetura_visao_geral.pdf
@@ -87,17 +113,21 @@ dot -Tpdf uml/arquitetura_visao_geral.dot -o uml/arquitetura_visao_geral.pdf
 dot -Tpdf uml/fluxograma_estudo_caso_design_construtal.dot -o uml/fluxograma_estudo_caso_design_construtal.pdf
 ```
 
-Para gerar fluxogramas com formatação Latex
+Para gerar fluxogramas formatados em **LaTeX**:
+
 ```bash
 dot2tex --format tikz uml/fluxograma_estudo_caso_design_construtal.dot > uml/fluxograma_estudo_caso_design_construtal.tex
 ```
 
-Para compilar para pdf:
+Para compilar o arquivo **LaTeX** para **PDF**:
+
 ```bash
 pdflatex uml/fluxograma_estudo_caso_design_construtal.tex
 ```
 
-Para gerar automaticamente a partir do projeto Django:
+### Geração Automática a partir do Projeto Django
+
+Gerar diagramas para a aplicação **CBEB**:
 
 ```bash
 pyreverse -o dot -p cbeb constructal_automate/cbeb
@@ -107,6 +137,8 @@ pyreverse -o dot -p cbeb constructal_automate/cbeb
 dot -Tpdf classes_cbeb.dot -o classes_cbeb.pdf
 ```
 
+Gerar diagramas para a aplicação **CSG**:
+
 ```bash
 pyreverse -o dot -p csg constructal_automate/csg
 ```
@@ -115,10 +147,23 @@ pyreverse -o dot -p csg constructal_automate/csg
 dot -Tpdf classes_csg.dot -o classes_csg.pdf
 ```
 
-### Docker
+## Docker
 
-docker compose -p ca-press up -d ca-db
+Para construir e executar os containers do projeto:
 
+```bash
+docker compose -p ca-press up --build --detach
+```
+
+Para parar e remover os containers:
+
+```bash
 docker-compose -p ca-press down
+```
 
- docker build -t ca-app -f Dockerfile.app .
+Para construir a imagem Docker da aplicação:
+
+```bash
+docker build -t ca-app -f Dockerfile.app .
+```
+
