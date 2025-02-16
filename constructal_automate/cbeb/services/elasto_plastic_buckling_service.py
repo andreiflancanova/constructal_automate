@@ -5,7 +5,9 @@ from csg.models import StiffenedPlate
 from cbeb.models.processing_status import ProcessingStatus
 from ansys.mapdl.core.errors import MapdlRuntimeError
 from ansys.mapdl.core import launch_mapdl
+from rest_framework.exceptions import APIException
 import re
+import time
 
 LINES_CONTORNO_PLACA_TS = os.getenv('LINES_CONTORNO_PLACA_TS')
 LINES_CONTORNO_PLACA_LS = os.getenv('LINES_CONTORNO_PLACA_LS')
@@ -17,8 +19,14 @@ FAILED_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Failed')
 CANCELLED_PROCESSING_STATUS = ProcessingStatus.objects.get(name='Cancelled')
 
 MAPDL_RUN_LOCATION = os.getenv('MAPDL_RUN_LOCATION')
-MAPDL_START_TIMEOUT = int(os.getenv('MAPDL_START_TIMEOUT', 30))
+MAPDL_START_TIMEOUT = int(os.getenv('MAPDL_START_TIMEOUT', 240))
+MAPDL_GRPC_HOST = os.getenv('MAPDL_GRPC_HOST')
+MAPDL_GRPC_PORT = os.getenv('MAPDL_GRPC_PORT')
+MAPDL_LOG_LEVEL_ELASTO_PLASTIC_BUCKLING = os.getenv('MAPDL_LOG_LEVEL_ELASTO_PLASTIC_BUCKLING')
 
+MAPDL_OUTPUT_BASEDIR_ABSOLUTE_HOST_PATH = os.getenv('MAPDL_OUTPUT_BASEDIR_ABSOLUTE_HOST_PATH')
+MAPDL_OUTPUT_BASEDIR_ABSOLUTE_CONTAINER_PATH = os.getenv('MAPDL_OUTPUT_BASEDIR_ABSOLUTE_CONTAINER_PATH')
+MAPDL_NUMBER_OF_PROCESSORS = os.getenv('MAPDL_NUMBER_OF_PROCESSORS')
 NSUBST_NSBSTP = 200
 NSUBST_NSBMX = 400
 NSUBST_NSBMN = 50
@@ -34,52 +42,42 @@ class ElastoPlasticBucklingService():
                ):
 
         analysis_dir_path = stiffened_plate_analysis.analysis_dir_path
-        analysis_log_path = stiffened_plate_analysis.analysis_lgw_file_path
-        analysis_db_path = analysis_log_path.replace('.txt', '.db')
+        analysis_log_host_path = stiffened_plate_analysis.analysis_lgw_file_path
+        analysis_log_container_path = analysis_log_host_path.replace(MAPDL_OUTPUT_BASEDIR_ABSOLUTE_HOST_PATH, MAPDL_OUTPUT_BASEDIR_ABSOLUTE_CONTAINER_PATH)
+        analysis_db_host_path = analysis_log_host_path.replace('.txt', '.db')
         buckling_load_type = stiffened_plate_analysis.buckling_load_type.name
         rst_file_path = stiffened_plate_analysis.analysis_rst_file_path
-        a = stiffened_plate.plate.a
         b = stiffened_plate.plate.b
         t_1 = stiffened_plate.t_1
 
         material = stiffened_plate_analysis.material
 
-
         mapdl = launch_mapdl(
-            port=50052,
             run_location=MAPDL_RUN_LOCATION,
-            nproc=4,
+            ip=MAPDL_GRPC_HOST,
+            port=MAPDL_GRPC_PORT,
+            start_instance=False,
+            nproc=MAPDL_NUMBER_OF_PROCESSORS,
             override=True,
-            loglevel="INFO",
-            start_timeout=MAPDL_START_TIMEOUT,
+            loglevel=MAPDL_LOG_LEVEL_ELASTO_PLASTIC_BUCKLING,
             remove_temp_files=True,
-            cleanup_on_exit=True,
+            cleanup_on_exit=True
         )
 
         try:
             stiffened_plate_analysis.elasto_plastic_buckling_status = IN_PROGRESS_PROCESSING_STATUS
             stiffened_plate_analysis.save()
             w0 = self.define_initial_deflection(b)
-            self.load_previous_steps_analysis_db(mapdl, analysis_log_path, analysis_dir_path, analysis_db_path)
-            self.define_nonlinear_analysis_params(mapdl, w0, rst_file_path, material, t_1)
+            self.load_previous_steps_analysis_db(mapdl, analysis_log_container_path, analysis_dir_path, analysis_db_host_path)
+            self.define_nonlinear_analysis_prep7(mapdl, w0, rst_file_path, material)
+            self.define_nonlinear_solution_aspects(mapdl, material, t_1)
             p_u = self.strategy.apply_load_for_elasto_plastic_buckling(mapdl, buckling_load_type, material, t_1)
-            
-            try:
-                self.solve_elasto_plastic_buckling(mapdl)
-            except:
-                mapdl = launch_mapdl(
-                    port=50053,
-                    run_location=MAPDL_RUN_LOCATION,
-                    nproc=4,
-                    override=True,
-                    loglevel="INFO",
-                    start_timeout=MAPDL_START_TIMEOUT,
-                    remove_temp_files=True,
-                    cleanup_on_exit=True,
-                )
+            print('Ro que deu a ideia deste print aqui')
+            self.solve_elasto_plastic_buckling(mapdl)
+            mapdl.post1()
             n_u, sigma_u = self.calc_ultimate_buckling_load_and_stress(mapdl, t_1, p_u)
             w_max = self.calc_z_deflection(mapdl, p_u)
-            von_mises_dist_img_path, w_dist_img_path = self.plot_images(mapdl, analysis_db_path, material.yielding_stress, p_u)
+            von_mises_dist_img_path, w_dist_img_path = self.plot_images(mapdl, analysis_db_host_path, material.yielding_stress, p_u)
             mapdl.finish()
             mapdl._close_apdl_log()
             stiffened_plate_analysis.elasto_plastic_buckling_status = COMPLETED_PROCESSING_STATUS
@@ -90,17 +88,19 @@ class ElastoPlasticBucklingService():
             mapdl._close_apdl_log()
             stiffened_plate_analysis.elasto_plastic_buckling_status = FAILED_PROCESSING_STATUS
             stiffened_plate_analysis.save()
-        finally:
-            mapdl.exit()
+        # finally:
+        #     print('Andrei')
+        #     print(locals())
+        #     if 'ip' not in locals() or locals()['ip'] is None:
+        #         mapdl.exit()
         return p_u, n_u, sigma_u, w_max, von_mises_dist_img_path, w_dist_img_path
 
-    def load_previous_steps_analysis_db(self, mapdl, analysis_log_path, analysis_dir_path, analysis_db_path):
-        mapdl.open_apdl_log(filename=analysis_log_path, mode='a')
+    def load_previous_steps_analysis_db(self, mapdl, analysis_log_container_path, analysis_dir_path, analysis_db_host_path):
+        mapdl.open_apdl_log(filename=analysis_log_container_path, mode='a')
         mapdl.cwd(analysis_dir_path)
-        file_name = re.sub(r'^.*/([^/]+)\.db$', r'\1', analysis_db_path)
+        file_name = re.sub(r'^.*/([^/]+)\.db$', r'\1', analysis_db_host_path)
         mapdl.filname(fname=file_name, key=0)
         mapdl.resume(fname=file_name, ext = 'db')
-        mapdl.slashsolu()
 
 
     def define_initial_deflection(self, b):
@@ -112,8 +112,7 @@ class ElastoPlasticBucklingService():
     def is_stiffened_plate(self, h_s, t_s):
         return h_s != 0.00 and t_s != 0.00
 
-    # def define_nonlinear_analysis_params(self, mapdl, w0, rst_file_path, material, t_eq_ts, t_eq_ls):
-    def define_nonlinear_analysis_params(self, mapdl, w0, rst_file_path, material, t_1):
+    def define_nonlinear_analysis_prep7(self, mapdl, w0, rst_file_path, material):
         mapdl.allsel(labt="ALL", entity="ALL")
 
         # Entrar no /PREP7 para análise de flambagem elasto-plástica
@@ -129,7 +128,9 @@ class ElastoPlasticBucklingService():
         mapdl.tb(lab="BISO", mat=1, ntemp=1, npts=2)
         mapdl.tbtemp(0)
         mapdl.tbdata("", material.yielding_stress, material.tang_modulus, "")
+        mapdl.finish()
 
+    def define_nonlinear_solution_aspects(self, mapdl, material, t_1):
         # Entrar no /SOLU para análise de flambagem elasto-plástica
         mapdl.slashsolu()
 
@@ -147,29 +148,29 @@ class ElastoPlasticBucklingService():
         mapdl.nsubst(NSUBST_NSBSTP, NSUBST_NSBMX, NSUBST_NSBMN)
 
         ## Limpar os dados de solução salvos no DB do ANSYS para salvar os resultados dos sub-passos na análise de flambagem elasto-plástica
+        print('Antes do OUTRES ERASE')
         mapdl.outres("ERASE")
-
+        print('Depois do OUTRES ERASE')
+        
         ## Escrever os resultados de todos os sub-passos no DB do ANSYS
+        print('Antes do OUTRES ALL')
         mapdl.outres("ALL", "ALL")
-
+        print('Depois do OUTRES ALL')
         ## Definir o valor da carga de referência ao final do Passo de Carga (após todos os sub-passos terem sido executados)
-
         n_e = round(material.yielding_stress*t_1, 1)
         mapdl.time(n_e)
 
     def solve_elasto_plastic_buckling(self, mapdl):
-        
         try:
+            print('Entering the elasto-plastic buckling SOLVE step')
             mapdl.solve()
-        except:
-            print("An error occurred, but the analysis will try to continue")
+        except Exception as e:
+            print(f"An error occurred during the SOLVE step: {e}")
         mapdl.finish()
 
     def calc_ultimate_buckling_load_and_stress(self, mapdl, t_1, p_u):
-        mapdl.post1()
-
+        print(f"Antes de pegar o array de post_processing")
         position = self.calc_post_processing_frequency_values_arr_position_for_ultimate_load(mapdl, p_u)
-
         n_u = mapdl.post_processing.frequency_values[position]
 
         sigma_u = n_u/float(t_1)
@@ -177,11 +178,20 @@ class ElastoPlasticBucklingService():
         return n_u, sigma_u
     
     def calc_post_processing_frequency_values_arr_position_for_ultimate_load(self, mapdl, p_u):
-        first_to_last_arr_position = len(mapdl.post_processing.frequency_values)-2
-        first_to_last_load = mapdl.post_processing.frequency_values[first_to_last_arr_position]
+        try:
+            print("first_to_last_arr_position")
+            first_to_last_arr_position = len(mapdl.post_processing.frequency_values)-2
+            
+            print("first_to_last_load")
+            first_to_last_load = mapdl.post_processing.frequency_values[first_to_last_arr_position]
 
-        second_to_last_arr_position = len(mapdl.post_processing.frequency_values)-3
-        second_to_last_load = mapdl.post_processing.frequency_values[second_to_last_arr_position]
+            print("second_to_last_arr_position")
+            second_to_last_arr_position = len(mapdl.post_processing.frequency_values)-3
+            print("second_to_last_load")
+            second_to_last_load = mapdl.post_processing.frequency_values[second_to_last_arr_position]
+        except IndexError as e:
+            print(e)
+            raise APIException(detail=str(e), code=500)
 
         diff_between_loads = first_to_last_load - second_to_last_load
         load_increment = p_u/NSUBST_NSBMX
@@ -209,12 +219,14 @@ class ElastoPlasticBucklingService():
     def calc_post_processing_frequency_values_arr_position_for_substep(self, mapdl, p_u):
         return self.calc_post_processing_frequency_values_arr_position_for_ultimate_load(mapdl, p_u) + 1
 
-    def plot_images(self, mapdl, analysis_db_path, material_yielding_stress, p_u):
+    def plot_images(self, mapdl, analysis_db_host_path, material_yielding_stress, p_u):
         VON_MISES_IMG_SUFFIX = '_von_mises_dist.png'
         W_IMG_SUFFIX = '_w_dist.png'
 
-        von_mises_dist_img_path = analysis_db_path.replace('.db', VON_MISES_IMG_SUFFIX)
-        w_dist_img_path = analysis_db_path.replace('.db', W_IMG_SUFFIX)
+        von_mises_dist_img_host_path = analysis_db_host_path.replace('.db', VON_MISES_IMG_SUFFIX)
+        von_mises_dist_img_container_path = von_mises_dist_img_host_path.replace(MAPDL_OUTPUT_BASEDIR_ABSOLUTE_HOST_PATH, MAPDL_OUTPUT_BASEDIR_ABSOLUTE_CONTAINER_PATH)
+        w_dist_img_host_path = analysis_db_host_path.replace('.db', W_IMG_SUFFIX)
+        w_dist_img_container_path = w_dist_img_host_path.replace(MAPDL_OUTPUT_BASEDIR_ABSOLUTE_HOST_PATH, MAPDL_OUTPUT_BASEDIR_ABSOLUTE_CONTAINER_PATH)
 
         position = self.calc_post_processing_frequency_values_arr_position_for_ultimate_load(mapdl, p_u)
 
@@ -232,7 +244,7 @@ class ElastoPlasticBucklingService():
             rng=[0, material_yielding_stress],
             line_width=1.0,           
             off_screen=True,
-            # screenshot=von_mises_dist_img_path,
+            # screenshot=von_mises_dist_img_container_path,
             show_scalar_bar=True,
             # show_displacement=True,
             # displacement_factor=2,
@@ -262,7 +274,7 @@ class ElastoPlasticBucklingService():
             rng=[0, material_yielding_stress],
             line_width=1.0,           
             off_screen=True,
-            screenshot=von_mises_dist_img_path,
+            screenshot=von_mises_dist_img_container_path,
             show_scalar_bar=True,
             # show_displacement=True,
             # displacement_factor=2,
@@ -291,7 +303,7 @@ class ElastoPlasticBucklingService():
             cmap="jet",
             line_width=1.0,
             off_screen=True,
-            screenshot=w_dist_img_path,
+            screenshot=w_dist_img_container_path,
             show_scalar_bar=True,
             scalar_bar_args={
                 "title": "Deslocamento em Z (mm)",
@@ -304,6 +316,5 @@ class ElastoPlasticBucklingService():
                 "label_font_size": 16,
             }
         )
-        
 
-        return von_mises_dist_img_path, w_dist_img_path
+        return von_mises_dist_img_host_path, w_dist_img_host_path

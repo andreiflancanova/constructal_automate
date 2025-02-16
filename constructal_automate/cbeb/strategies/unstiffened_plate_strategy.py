@@ -2,7 +2,6 @@ import os
 from cbeb.strategies.plate_strategy import PlateStrategy
 from cbeb.models.processing_status import ProcessingStatus
 
-MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH = os.getenv('MAPDL_OUTPUT_BASEDIR_ABSOLUTE_PATH')
 
 ENRIJECEDOR_LONGITUDINAL_PRE_APTN = os.getenv('ENRIJECEDOR_LONGITUDINAL_PRE_APTN')
 ENRIJECEDOR_TRANSVERSAL_PRE_APTN = os.getenv('ENRIJECEDOR_TRANSVERSAL_PRE_APTN')
@@ -191,12 +190,14 @@ class UnstiffenedPlateStrategy(PlateStrategy):
         mapdl.finish()
 
     def apply_load_for_elastic_buckling(self, mapdl, buckling_load_type):
+        mapdl.slashsolu()
         mapdl.allsel(labt="ALL", entity="ALL")
         if self.is_biaxial_buckling(buckling_load_type):
             mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
             mapdl.sfl(LINES_CONTORNO_PLACA_LS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
         else:
             mapdl.sfl(LINES_CONTORNO_PLACA_TS, "PRESS", ELASTIC_BUCKLING_APPLIED_LOAD)
+        mapdl.finish()
 
     def apply_load_for_elasto_plastic_buckling(self, mapdl, buckling_load_type, material, t_1):
         p_u = round(material.yielding_stress*t_1, 2)

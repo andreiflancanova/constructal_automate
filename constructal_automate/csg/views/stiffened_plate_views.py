@@ -3,11 +3,13 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from csg.models import StiffenedPlate
 from csg.serializers import StiffenedPlateSerializer
+from csg.permissions import IsAuthenticatedForWriteMethods
 
 
 class StiffenedPlateViewSet(viewsets.ModelViewSet):
     
     queryset = StiffenedPlate.objects.all()
+    permission_classes = [IsAuthenticatedForWriteMethods]
     
     def get_serializer_class(self):
         return StiffenedPlateSerializer

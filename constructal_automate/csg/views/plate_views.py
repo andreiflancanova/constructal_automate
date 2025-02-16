@@ -3,11 +3,12 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from csg.models import Plate
 from csg.serializers import PlateSerializer
-
+from csg.permissions import IsAuthenticatedForWriteMethods
 
 class PlateViewSet(viewsets.ModelViewSet):
     
     queryset = Plate.objects.all()
+    permission_classes = [IsAuthenticatedForWriteMethods]
     
     def get_serializer_class(self):
         return PlateSerializer

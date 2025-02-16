@@ -30,6 +30,9 @@ SECRET_KEY = 'django-insecure-88+4@!%u14xzb42-d*6ft$ub5n%4ip0re&jyp9q%6a3*s_#e@p
 DEBUG = True
 
 ALLOWED_HOSTS = []
+# ALLOWED_HOSTS = [
+#     os.environ.get('NGROK_PUBLIC_DNS')
+# ]
 
 
 # Application definition
@@ -87,7 +90,9 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': os.getenv('DB_NAME'),
         'USER': os.getenv('DB_USER'),
-        'PASSWORD': os.getenv('DB_PASSWORD')
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.environ.get('MARIADB_HOST'),
+        'PORT': os.environ.get('MARIADB_PORT'),
     }
 }
 
@@ -132,3 +137,14 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+#CSRF_TRUSTED_ORIGINS = [os.environ.get('NGROK_PUBLIC_DNS')]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.AllowAny',
+    ]
+}

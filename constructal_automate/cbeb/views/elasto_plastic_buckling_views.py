@@ -3,11 +3,13 @@ from cbeb.serializers.elasto_plastic_buckling_serializer import ElastoPlasticBuc
 from rest_framework import status, viewsets
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
+from cbeb.permissions import IsAuthenticatedForWriteMethods
 
 
 class ElastoPlasticBucklingViewSet(viewsets.ModelViewSet):
     queryset = ElastoPlasticBuckling.objects.all()
     serializer_class = ElastoPlasticBucklingSerializer
+    permission_classes = [IsAuthenticatedForWriteMethods]
 
     def list(self, request):
         queryset = ElastoPlasticBuckling.objects.all()

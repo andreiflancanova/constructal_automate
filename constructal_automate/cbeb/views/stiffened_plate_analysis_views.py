@@ -4,11 +4,14 @@ from django.shortcuts import get_object_or_404
 
 from cbeb.models import StiffenedPlateAnalysis
 from cbeb.serializers import StiffenedPlateAnalysisSerializer
+from cbeb.permissions import IsAuthenticatedForWriteMethods
 
 
 class StiffenedPlateAnalysisViewSet(viewsets.ModelViewSet):
+
     queryset = StiffenedPlateAnalysis.objects.all()
     serializer_class = StiffenedPlateAnalysisSerializer
+    permission_classes = [IsAuthenticatedForWriteMethods]
 
     def list(self, request):
         queryset = StiffenedPlateAnalysis.objects.all()
